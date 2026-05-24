@@ -1,36 +1,70 @@
 {
   "programming_languages": [
     "Python", "JavaScript", "TypeScript", "Java", "C", "C++", "C#", "Go", "Rust",
-    "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Dart", "Perl"
+    "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Dart", "Perl",
+    "VBA", "Bash", "Shell",
+    "Python", "Javascript", "Java"
   ],
   "web_frameworks": [
     "FastAPI", "Django", "Flask", "Express", "NestJS", "Spring Boot", "Laravel",
-    "Rails", "Next.js", "Nuxt.js", "React", "Vue", "Angular", "Svelte", "Remix"
+    "Rails", "Next.js", "Nuxt.js", "React", "Vue", "Angular", "Svelte", "Remix",
+    "Symfony", "CodeIgniter", "Strapi", "Gatsby", "Tailwind", "Bootstrap",
+    "ReactJS", "VueJS", "AngularJS", "NodeJS", "Node.js", "Spring"
   ],
   "databases": [
     "PostgreSQL", "MySQL", "SQLite", "MongoDB", "Redis", "Elasticsearch",
-    "Cassandra", "DynamoDB", "Oracle", "SQL Server", "MariaDB", "Firebase"
+    "Cassandra", "DynamoDB", "Oracle", "SQL Server", "MariaDB", "Firebase",
+    "PL/SQL", "NoSQL", "SGBD", "Merise", "UML"
   ],
   "devops": [
     "Docker", "Kubernetes", "CI/CD", "GitHub Actions", "Jenkins", "GitLab CI",
-    "Terraform", "Ansible", "AWS", "GCP", "Azure", "Linux", "Nginx", "Apache"
+    "Terraform", "Ansible", "AWS", "GCP", "Azure", "Linux", "Nginx", "Apache",
+    "DevOps", "Cloud", "Virtualisation", "Virtualisation", "VMware", "Proxmox",
+    "Microservices", "Architecture microservices", "Serverless"
   ],
   "ai_ml": [
     "Machine Learning", "Deep Learning", "NLP", "Computer Vision", "TensorFlow",
     "PyTorch", "scikit-learn", "Pandas", "NumPy", "Keras", "Hugging Face",
-    "spaCy", "NLTK", "OpenCV", "Data Science", "LLM", "RAG"
+    "spaCy", "NLTK", "OpenCV", "Data Science", "LLM", "RAG",
+    "Intelligence Artificielle", "IA", "Apprentissage automatique",
+    "Traitement du langage", "Vision par ordinateur", "Big Data"
   ],
   "soft_skills": [
     "Communication", "Teamwork", "Leadership", "Problem Solving", "Agile",
-    "Scrum", "Project Management", "Critical Thinking", "Adaptability"
+    "Scrum", "Project Management", "Critical Thinking", "Adaptability",
+    "Gestion de projet", "Travail en equipe", "Autonomie", "Rigueur",
+    "Esprit d'analyse", "Methode Agile", "Kanban", "PRINCE2"
   ],
   "tools": [
-    "Git", "GitHub", "Jira", "Confluence", "Figma", "Postman", "VS Code",
-    "IntelliJ", "Vim", "Linux", "Bash", "PowerShell", "REST API", "GraphQL",
-    "gRPC", "WebSocket", "OAuth", "JWT", "Microservices", "RabbitMQ", "Kafka"
+    "Git", "GitHub", "GitLab", "Jira", "Confluence", "Figma", "Postman", "VS Code",
+    "IntelliJ", "Vim", "Bash", "PowerShell", "REST API", "GraphQL",
+    "gRPC", "WebSocket", "OAuth", "JWT", "Microservices", "RabbitMQ", "Kafka",
+    "SOAP", "API REST", "Swagger", "OpenAPI", "Bitbucket", "SVN",
+    "Eclipse", "NetBeans", "PyCharm", "Android Studio", "Xcode",
+    "Trello", "Notion", "Slack", "Teams"
   ],
   "data": [
     "SQL", "ETL", "Data Warehousing", "Power BI", "Tableau", "Spark",
-    "Hadoop", "Airflow", "dbt", "Data Engineering", "BigQuery"
+    "Hadoop", "Airflow", "dbt", "Data Engineering", "BigQuery",
+    "Analyse de donnees", "Reporting", "Excel", "SSIS", "SSRS", "SSAS",
+    "Talend", "Informatica", "SAS", "SPSS", "Qlik", "Looker",
+    "Data Analyst", "Data Engineer", "Business Intelligence", "BI"
+  ],
+  "networks_security": [
+    "Cisco", "CCNA", "CCNP", "Firewall", "VPN", "TCP/IP", "LAN", "WAN",
+    "Reseau", "Securite informatique", "Cybersecurite", "Penetration testing",
+    "SIEM", "SOC", "Active Directory", "LDAP", "DNS", "DHCP", "VLAN",
+    "Palo Alto", "FortiGate", "CheckPoint", "Wireshark", "Nmap",
+    "ISO 27001", "GDPR", "PKI", "SSL", "TLS"
+  ],
+  "mobile": [
+    "Android", "iOS", "Flutter", "React Native", "Ionic", "Xamarin",
+    "Swift", "Kotlin", "Objective-C", "Mobile Development",
+    "Developpement mobile", "Applications mobiles"
+  ],
+  "erp_crm": [
+    "SAP", "Odoo", "Salesforce", "Microsoft Dynamics", "Oracle ERP",
+    "ERP", "CRM", "SAP ABAP", "SAP Basis", "SAP FI", "SAP MM", "SAP SD",
+    "Sage", "CIEL", "HubSpot", "Zoho"
   ]
 }
