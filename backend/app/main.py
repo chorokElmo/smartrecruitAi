@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.config import settings
+from app.routers import auth, users, jobs
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -21,17 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve uploaded files
+# Serve uploaded CV files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Routers are registered here in Phase 2
-# from app.routers import auth, users, jobs, cv, recommendations
-# app.include_router(auth.router,            prefix=f"{settings.API_V1_PREFIX}/auth",            tags=["Auth"])
-# app.include_router(users.router,           prefix=f"{settings.API_V1_PREFIX}/users",           tags=["Users"])
-# app.include_router(jobs.router,            prefix=f"{settings.API_V1_PREFIX}/jobs",            tags=["Jobs"])
-# app.include_router(cv.router,              prefix=f"{settings.API_V1_PREFIX}/cv",              tags=["CV"])
-# app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}/recommendations", tags=["Recommendations"])
+# ─── API Routers ──────────────────────────────────────
+prefix = settings.API_V1_PREFIX
+
+app.include_router(auth.router,  prefix=f"{prefix}/auth",  tags=["Auth"])
+app.include_router(users.router, prefix=f"{prefix}/users", tags=["Users"])
+app.include_router(jobs.router,  prefix=f"{prefix}/jobs",  tags=["Jobs"])
+# Phase 3:
+# app.include_router(cv.router,              prefix=f"{prefix}/cv",              tags=["CV"])
+# app.include_router(recommendations.router, prefix=f"{prefix}/recommendations", tags=["Recommendations"])
 
 
 @app.get("/", tags=["Health"])
