@@ -8,9 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import { jobsApi } from "@/lib/api/jobs";
 import { useAuthStore } from "@/lib/store/authStore";
-import type { Recommendation } from "@/types/job";
-import type { Job } from "@/types/job";
-import { Briefcase, Star, BookmarkCheck, Brain, ArrowRight, RefreshCw } from "lucide-react";
+import type { Recommendation, Job } from "@/types/job";
+import { Briefcase, Star, Brain, ArrowRight, RefreshCw, Sparkles, TrendingUp, BookmarkCheck } from "lucide-react";
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -38,40 +37,60 @@ export default function DashboardPage() {
     }
   };
 
-  const scoreColor = (score: number) =>
-    score >= 0.7 ? "text-emerald-600" : score >= 0.4 ? "text-amber-600" : "text-red-500";
+  const scoreColor = (s: number) =>
+    s >= 0.7 ? "text-emerald-500" : s >= 0.4 ? "text-amber-500" : "text-red-400";
+
+  const scoreBarColor = (s: number) =>
+    s >= 0.7 ? "bg-emerald-500" : s >= 0.4 ? "bg-amber-500" : "bg-red-400";
+
+  const statCards = [
+    {
+      icon: Brain, label: "AI Matches", value: recs.length,
+      gradient: "from-indigo-500 to-violet-500", light: "bg-indigo-50 dark:bg-indigo-950/30",
+      text: "text-indigo-600 dark:text-indigo-400",
+    },
+    {
+      icon: Sparkles, label: "My Skills", value: user?.skills?.length ?? 0,
+      gradient: "from-emerald-500 to-teal-500", light: "bg-emerald-50 dark:bg-emerald-950/30",
+      text: "text-emerald-600 dark:text-emerald-400",
+    },
+    {
+      icon: TrendingUp, label: "Top Score", value: recs[0] ? `${Math.round(recs[0].score * 100)}%` : "—",
+      gradient: "from-amber-500 to-orange-500", light: "bg-amber-50 dark:bg-amber-950/30",
+      text: "text-amber-600 dark:text-amber-400",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Your personalized job intelligence hub
-          </p>
+          <h1 className="text-2xl font-extrabold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Your personalized AI recruitment hub</p>
         </div>
-        <Button onClick={handleGenerate} disabled={generating} className="gap-2">
+        <Button
+          onClick={handleGenerate} disabled={generating}
+          className="gradient-bg text-white border-0 shadow-md shadow-indigo-500/25 gap-2"
+        >
           <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} />
           {generating ? "Generating…" : "Run AI Matching"}
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { icon: Brain,         label: "AI Matches",   value: recs.length,           color: "text-primary" },
-          { icon: Briefcase,     label: "Skills",       value: user?.skills?.length ?? 0, color: "text-emerald-600" },
-          { icon: BookmarkCheck, label: "Profile",      value: user?.diploma ? "Complete" : "Incomplete", color: "text-amber-600" },
-        ].map(({ icon: Icon, label, value, color }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                <Icon className={`w-5 h-5 ${color}`} />
+        {statCards.map(({ icon: Icon, label, value, gradient, light, text }) => (
+          <Card key={label} className={`border-0 ${light} card-glow`}>
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <span className={`text-3xl font-extrabold ${text}`}>{value}</span>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{value}</p>
-                <p className="text-sm text-muted-foreground">{label}</p>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">{label}</p>
             </CardContent>
           </Card>
         ))}
@@ -79,32 +98,51 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Recommendations */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-primary" /> Top Recommendations
+        <Card className="card-glow">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
+                <Star className="w-3.5 h-3.5 text-white" />
+              </div>
+              Top Recommendations
             </CardTitle>
-            <Link href="/jobs"><Button variant="ghost" size="sm" className="gap-1">View all <ArrowRight className="w-3 h-3" /></Button></Link>
+            <Link href="/jobs">
+              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+                View all <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
+                ))}
+              </div>
             ) : recs.length === 0 ? (
-              <div className="text-center py-6 space-y-3">
-                <p className="text-sm text-muted-foreground">No recommendations yet.</p>
-                <Button size="sm" onClick={handleGenerate} disabled={generating}>Run AI Matching</Button>
+              <div className="text-center py-10 space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto">
+                  <Brain className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">No recommendations yet</p>
+                <Button size="sm" onClick={handleGenerate} disabled={generating}
+                  className="gradient-bg text-white border-0">
+                  Run AI Matching
+                </Button>
               </div>
             ) : (
               recs.slice(0, 4).map((rec) => (
                 <Link key={rec.id} href={`/jobs/${rec.job.id}`} className="block group">
-                  <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors">
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all duration-150">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{rec.job.title}</p>
-                      <p className="text-xs text-muted-foreground">{rec.job.company} · {rec.job.location}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{rec.job.company} · {rec.job.location}</p>
                     </div>
                     <div className="text-right ml-4 shrink-0">
                       <p className={`text-sm font-bold ${scoreColor(rec.score)}`}>{Math.round(rec.score * 100)}%</p>
-                      <Progress value={rec.score * 100} className="w-16 h-1.5 mt-1" />
+                      <div className="w-16 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                        <div className={`h-full rounded-full ${scoreBarColor(rec.score)}`} style={{ width: `${rec.score * 100}%` }} />
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -114,23 +152,30 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent Jobs */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-primary" /> Recent Listings
+        <Card className="card-glow">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                <Briefcase className="w-3.5 h-3.5 text-white" />
+              </div>
+              Recent Listings
             </CardTitle>
-            <Link href="/jobs"><Button variant="ghost" size="sm" className="gap-1">Browse all <ArrowRight className="w-3 h-3" /></Button></Link>
+            <Link href="/jobs">
+              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+                Browse all <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {recentJobs.map((job) => (
               <Link key={job.id} href={`/jobs/${job.id}`} className="block group">
-                <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{job.title}</p>
-                    <p className="text-xs text-muted-foreground">{job.company} · {job.location}</p>
+                <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all duration-150">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate group-hover:text-emerald-600 transition-colors">{job.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{job.company} · {job.location}</p>
                   </div>
                   {job.contract_type && (
-                    <Badge variant="secondary" className="ml-4 shrink-0 text-xs">{job.contract_type}</Badge>
+                    <Badge variant="secondary" className="ml-3 shrink-0 text-xs">{job.contract_type}</Badge>
                   )}
                 </div>
               </Link>
@@ -139,16 +184,24 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Skills */}
+      {/* Skills Cloud */}
       {(user?.skills?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Skills ({user!.skills.length})</CardTitle>
+        <Card className="card-glow">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
+              Your Skills ({user!.skills.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {user!.skills.map((skill) => (
-                <Badge key={skill} variant="secondary">{skill}</Badge>
+                <span key={skill}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  {skill}
+                </span>
               ))}
             </div>
           </CardContent>

@@ -9,11 +9,11 @@ import { useAuthStore } from "@/lib/store/authStore";
 import { useRouter } from "next/navigation";
 
 const navItems = [
-  { label: "Dashboard",      href: "/dashboard",  icon: LayoutDashboard },
-  { label: "Jobs",           href: "/jobs",        icon: Briefcase },
-  { label: "Saved Jobs",     href: "/saved",       icon: BookmarkCheck },
-  { label: "My CV",          href: "/cv",          icon: FileText },
-  { label: "Profile",        href: "/profile",     icon: User },
+  { label: "Dashboard",  href: "/dashboard", icon: LayoutDashboard },
+  { label: "Jobs",       href: "/jobs",       icon: Briefcase },
+  { label: "Saved Jobs", href: "/saved",      icon: BookmarkCheck },
+  { label: "My CV",      href: "/cv",         icon: FileText },
+  { label: "Profile",    href: "/profile",    icon: User },
 ];
 
 export function Sidebar() {
@@ -27,17 +27,23 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-card border-r">
+    <aside className="flex flex-col w-64 min-h-screen bg-card border-r border-border/60">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-6 py-5 border-b">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Briefcase className="w-4 h-4 text-primary-foreground" />
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border/60">
+        <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center shadow-md shadow-indigo-500/25">
+          <Briefcase className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-lg tracking-tight">SmartRecruit</span>
+        <div>
+          <span className="font-bold text-sm tracking-tight block leading-none">SmartRecruit</span>
+          <span className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase">AI Platform</span>
+        </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-5 space-y-1">
+        <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-3 mb-3">
+          Navigation
+        </p>
         {navItems.map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
@@ -45,24 +51,25 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                 active
-                  ? "bg-primary text-primary-foreground"
+                  ? "gradient-bg text-white shadow-md shadow-indigo-500/25"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn("w-4 h-4", active ? "text-white" : "")} />
               {label}
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
             </Link>
           );
         })}
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t">
+      <div className="px-3 py-4 border-t border-border/60">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
         >
           <LogOut className="w-4 h-4" />
           Log out
