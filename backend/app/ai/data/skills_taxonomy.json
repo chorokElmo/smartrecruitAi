@@ -1,0 +1,36 @@
+{
+  "programming_languages": [
+    "Python", "JavaScript", "TypeScript", "Java", "C", "C++", "C#", "Go", "Rust",
+    "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Dart", "Perl"
+  ],
+  "web_frameworks": [
+    "FastAPI", "Django", "Flask", "Express", "NestJS", "Spring Boot", "Laravel",
+    "Rails", "Next.js", "Nuxt.js", "React", "Vue", "Angular", "Svelte", "Remix"
+  ],
+  "databases": [
+    "PostgreSQL", "MySQL", "SQLite", "MongoDB", "Redis", "Elasticsearch",
+    "Cassandra", "DynamoDB", "Oracle", "SQL Server", "MariaDB", "Firebase"
+  ],
+  "devops": [
+    "Docker", "Kubernetes", "CI/CD", "GitHub Actions", "Jenkins", "GitLab CI",
+    "Terraform", "Ansible", "AWS", "GCP", "Azure", "Linux", "Nginx", "Apache"
+  ],
+  "ai_ml": [
+    "Machine Learning", "Deep Learning", "NLP", "Computer Vision", "TensorFlow",
+    "PyTorch", "scikit-learn", "Pandas", "NumPy", "Keras", "Hugging Face",
+    "spaCy", "NLTK", "OpenCV", "Data Science", "LLM", "RAG"
+  ],
+  "soft_skills": [
+    "Communication", "Teamwork", "Leadership", "Problem Solving", "Agile",
+    "Scrum", "Project Management", "Critical Thinking", "Adaptability"
+  ],
+  "tools": [
+    "Git", "GitHub", "Jira", "Confluence", "Figma", "Postman", "VS Code",
+    "IntelliJ", "Vim", "Linux", "Bash", "PowerShell", "REST API", "GraphQL",
+    "gRPC", "WebSocket", "OAuth", "JWT", "Microservices", "RabbitMQ", "Kafka"
+  ],
+  "data": [
+    "SQL", "ETL", "Data Warehousing", "Power BI", "Tableau", "Spark",
+    "Hadoop", "Airflow", "dbt", "Data Engineering", "BigQuery"
+  ]
+}
