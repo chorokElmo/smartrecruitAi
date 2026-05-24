@@ -29,7 +29,7 @@ SmartRecruit AI solves a real problem: Moroccan students waste hours searching f
 | Database | PostgreSQL 15 |
 | AI / NLP | spaCy, Sentence Transformers, scikit-learn |
 | PDF Processing | PyMuPDF (fitz) |
-| DevOps | Docker, Docker Compose, GitHub Actions |
+| DevOps | GitHub Actions |
 
 ---
 
@@ -39,7 +39,6 @@ SmartRecruit AI solves a real problem: Moroccan students waste hours searching f
 smartrecruit-ai/
 ├── backend/          # FastAPI application
 ├── frontend/         # Next.js 15 application
-├── docker-compose.yml
 └── README.md
 ```
 
@@ -48,39 +47,46 @@ smartrecruit-ai/
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+
+- PostgreSQL 15 running locally
 - Python 3.11+
+- Node.js 18+
 
-### Run with Docker (recommended)
+### Backend
 
-```bash
-cp backend/.env.example backend/.env
-docker-compose up --build
-```
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs (Swagger): http://localhost:8000/docs
-
-### Run locally
-
-**Backend:**
 ```bash
 cd backend
+
+# 1. Create virtual environment
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-pip install -r requirements.txt
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS / Linux
+
+# 2. Install dependencies
+pip install -r requirements.dev.txt   # fast start (no ML packages)
+# pip install -r requirements.txt    # full install with AI/NLP
+
+# 3. Configure environment
+cp .env.example .env              # then edit .env with your DB credentials
+
+# 4. Run database migrations
 alembic upgrade head
+
+# 5. Start the server
 uvicorn app.main:app --reload
 ```
 
-**Frontend:**
+- API: http://localhost:8000
+- Swagger docs: http://localhost:8000/docs
+
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+- App: http://localhost:3000
 
 ---
 
