@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, JSON
+from sqlalchemy import Boolean, Column, String, Text, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -24,6 +24,3 @@ class Job(Base):
 
     saved_by = relationship("SavedJob", back_populates="job", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="job", cascade="all, delete-orphan")
-
-
-from sqlalchemy import Boolean
