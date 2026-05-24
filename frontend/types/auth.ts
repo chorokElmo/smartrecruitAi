@@ -10,8 +10,8 @@ export interface RegisterRequest {
   password: string;
 }
 
+// Backend returns token only; user is fetched via /auth/me
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: import("./user").User;
 }
