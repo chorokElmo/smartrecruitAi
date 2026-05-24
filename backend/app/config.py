@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # ignore Docker/CI env vars not declared in Settings
 
 
 @lru_cache()
