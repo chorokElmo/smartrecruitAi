@@ -10,10 +10,15 @@ Usage:
 
 import re
 import sys
+import io
 import time
 import argparse
 import html as html_module
 from urllib.parse import urljoin
+
+# Force UTF-8 output on Windows (avoids cp1256 crash when printing French chars)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 import requests
 from bs4 import BeautifulSoup
@@ -56,6 +61,7 @@ def get_soup(url: str, retries: int = 3) -> BeautifulSoup | None:
         try:
             r = requests.get(url, headers=HEADERS, timeout=15)
             r.raise_for_status()
+            r.encoding = "utf-8"          # force UTF-8 — Rekrute serves UTF-8 but header says latin-1
             return BeautifulSoup(r.text, "lxml")
         except Exception as e:
             print(f"  [warn] attempt {attempt+1} failed for {url}: {e}")
@@ -108,6 +114,8 @@ def parse_job(url: str) -> dict | None:
     title = re.sub(r"\s*[\|–-]\s*Rekrute.*$", "", title, flags=re.IGNORECASE).strip()
     # Remove "Offre d'emploi " prefix
     title = re.sub(r"^Offre\s+d[''`]?emploi\s+", "", title, flags=re.IGNORECASE).strip()
+    # Remove "[Company name]" prefix that Rekrute injects into og:title
+    title = re.sub(r"^\[[^\]]+\]\s*", "", title).strip()
 
     # Try to extract location from title (last part after last " - ")
     location = ""
