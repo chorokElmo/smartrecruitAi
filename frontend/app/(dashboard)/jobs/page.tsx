@@ -1,16 +1,87 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { jobsApi } from "@/lib/api/jobs";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import type { Job, Recommendation } from "@/types/job";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ScoreRing } from "@/components/ui/score-ring";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Building2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, MapPin, Building2, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
 const CONTRACT_TYPES = ["All", "CDI", "CDD", "Stage", "Freelance"];
+
+function JobCard({ job, score, index }: { job: Job; score?: number; index: number }) {
+  return (
+    <motion.div variants={itemVariants} transition={{ delay: index * 0.04 }}>
+      <Link href={`/jobs/${job.id}`} className="block group h-full">
+        <div className="card-base card-hover h-full flex flex-col p-4 gap-3">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              {/* Company avatar */}
+              <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+                {job.company[0]?.toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                  {job.title}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
+                  <Building2 className="w-3 h-3 shrink-0" />{job.company}
+                </p>
+              </div>
+            </div>
+            {/* Score ring */}
+            {score !== undefined && <ScoreRing score={score} size={42} strokeWidth={3.5} />}
+          </div>
+
+          {/* Meta */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+            {job.location && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3 shrink-0" />{job.location}
+              </span>
+            )}
+            {job.contract_type && (
+              <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
+                {job.contract_type}
+              </span>
+            )}
+            {job.source_name && (
+              <span className="text-[10px] opacity-60">{job.source_name}</span>
+            )}
+          </div>
+
+          {/* Description */}
+          <p className="text-xs text-muted-foreground line-clamp-2 flex-1 leading-relaxed">
+            {job.description}
+          </p>
+
+          {/* Skills */}
+          {job.required_skills.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/60 mt-auto">
+              {job.required_skills.slice(0, 3).map((s) => (
+                <span key={s} className="px-2 py-0.5 rounded-full skill-neutral text-[10px] font-medium">
+                  {s}
+                </span>
+              ))}
+              {job.required_skills.length > 3 && (
+                <span className="px-2 py-0.5 rounded-full skill-muted text-[10px] font-medium">
+                  +{job.required_skills.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -25,7 +96,7 @@ export default function JobsPage() {
 
   const scoreMap = Object.fromEntries(recs.map((r) => [r.job.id, r.score]));
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, size: 12 };
@@ -35,171 +106,161 @@ export default function JobsPage() {
       const { data } = await jobsApi.list(params);
       setJobs(data.items);
       setTotal(data.total);
-      setPages(data.pages);
+      setPages(data.pages ?? Math.ceil(data.total / 12));
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, contractType, search, location]);
 
   useEffect(() => { fetchJobs(); }, [page, contractType]);
   useEffect(() => { recommendationsApi.getAll().then((r) => setRecs(r.data)).catch(() => {}); }, []);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchJobs(); };
 
-  const scoreColor = (s: number) =>
-    s >= 0.7 ? "text-emerald-600 dark:text-emerald-400" :
-    s >= 0.4 ? "text-amber-600 dark:text-amber-400" : "text-red-500";
-
-  const scoreRingColor = (s: number) =>
-    s >= 0.7 ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30" :
-    s >= 0.4 ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30" :
-    "border-red-400 bg-red-50 dark:bg-red-950/30";
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Job Listings</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {total > 0 ? <><strong className="text-foreground">{total}</strong> opportunities found</> : "Browse all opportunities"}
+    <div className="max-w-6xl mx-auto space-y-5">
+      {/* ── Header ───────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h1 className="text-xl font-bold">Browse Jobs</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {total > 0
+            ? <><strong className="text-foreground font-semibold">{total}</strong> opportunities found</>
+            : "Find your next opportunity"
+          }
         </p>
-      </div>
+      </motion.div>
 
-      {/* Filters */}
-      <Card className="card-glow">
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-10 h-10" placeholder="Search jobs, companies, skills…"
-                value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            <div className="relative w-full sm:w-40">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-10 h-10" placeholder="Location"
-                value={location} onChange={(e) => setLocation(e.target.value)} />
-            </div>
-            <Button type="submit" className="gradient-bg text-white border-0 h-10 shadow-md shadow-indigo-500/20">
-              Search
-            </Button>
-          </form>
-
-          <div className="flex gap-2 flex-wrap">
-            {CONTRACT_TYPES.map((ct) => (
-              <button key={ct}
-                onClick={() => { setContractType(ct); setPage(1); }}
-                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-150 ${
-                  contractType === ct
-                    ? "gradient-bg text-white border-transparent shadow-md shadow-indigo-500/20"
-                    : "border-border text-muted-foreground hover:border-indigo-300 hover:text-indigo-600"
-                }`}>
-                {ct}
-              </button>
-            ))}
+      {/* ── Filters ──────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, duration: 0.3 }}
+        className="card-base p-3 space-y-3"
+      >
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="pl-9 h-9 text-sm"
+              placeholder="Search jobs, companies, skills…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="relative w-full sm:w-36">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="pl-9 h-9 text-sm"
+              placeholder="Location…"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+          <Button
+            type="submit"
+            className="gradient-bg text-white border-0 h-9 px-4 text-sm font-medium shrink-0 gap-1.5"
+            style={{ boxShadow: "var(--shadow-primary)" }}
+          >
+            <Filter className="w-3.5 h-3.5" />Search
+          </Button>
+        </form>
 
-      {/* Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="pt-5 space-y-3">
-                <div className="h-4 bg-muted rounded-full w-3/4" />
-                <div className="h-3 bg-muted rounded-full w-1/2" />
-                <div className="h-3 bg-muted rounded-full w-full" />
-                <div className="flex gap-2 mt-2">
-                  <div className="h-5 w-12 bg-muted rounded-full" />
-                  <div className="h-5 w-16 bg-muted rounded-full" />
-                </div>
-              </CardContent>
-            </Card>
+        {/* Contract type pills */}
+        <div className="flex gap-1.5 flex-wrap">
+          {CONTRACT_TYPES.map((ct) => (
+            <button
+              key={ct}
+              onClick={() => { setContractType(ct); setPage(1); }}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
+                contractType === ct
+                  ? "gradient-bg text-white border-transparent"
+                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground bg-background"
+              )}
+            >
+              {ct}
+            </button>
           ))}
         </div>
+      </motion.div>
+
+      {/* ── Job grid ─────────────────────────────── */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       ) : jobs.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <p className="font-semibold text-lg">No jobs found</p>
-          <p className="text-muted-foreground text-sm mt-1">Try a different search term or location</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="card-base py-20 text-center"
+        >
+          <Search className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="font-semibold text-foreground">No jobs found</p>
+          <p className="text-sm text-muted-foreground mt-1">Try different keywords or remove filters</p>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.map((job) => {
-            const score = scoreMap[job.id];
-            return (
-              <Link key={job.id} href={`/jobs/${job.id}`} className="block group">
-                <Card className="h-full transition-all duration-200 card-glow group-hover:border-indigo-300 group-hover:-translate-y-0.5">
-                  <CardContent className="pt-5 pb-5 flex flex-col h-full gap-3">
-                    {/* Top row */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                          {job.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />{job.company}
-                        </p>
-                      </div>
-                      {score !== undefined && (
-                        <div className={`shrink-0 min-w-[46px] text-center px-2 py-1 rounded-lg border ${scoreRingColor(score)}`}>
-                          <p className={`text-xs font-bold ${scoreColor(score)}`}>{Math.round(score * 100)}%</p>
-                          <p className="text-[9px] text-muted-foreground">match</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                      {job.location && (
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>
-                      )}
-                      {job.contract_type && (
-                        <Badge variant="outline" className="text-[10px] h-5 px-2">{job.contract_type}</Badge>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{job.description}</p>
-
-                    {/* Skills */}
-                    <div className="flex flex-wrap gap-1.5 mt-auto pt-1 border-t border-border/50">
-                      {job.required_skills.slice(0, 3).map((s) => (
-                        <span key={s} className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-medium">
-                          {s}
-                        </span>
-                      ))}
-                      {job.required_skills.length > 3 && (
-                        <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
-                          +{job.required_skills.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+        <motion.div
+          variants={listVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
+          {jobs.map((job, i) => (
+            <JobCard key={job.id} job={job} score={scoreMap[job.id]} index={i} />
+          ))}
+        </motion.div>
       )}
 
-      {/* Pagination */}
+      {/* ── Pagination ───────────────────────────── */}
       {pages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1}
-            onClick={() => setPage(p => p - 1)} className="gap-1">
-            <ChevronLeft className="w-3 h-3" />Previous
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-center justify-center gap-2"
+        >
+          <Button
+            variant="outline" size="sm"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="h-8 px-3 text-xs gap-1"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />Previous
           </Button>
-          <span className="text-sm text-muted-foreground px-2">
-            <strong>{page}</strong> / {pages}
-          </span>
-          <Button variant="outline" size="sm" disabled={page === pages}
-            onClick={() => setPage(p => p + 1)} className="gap-1">
-            Next<ChevronRight className="w-3 h-3" />
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(pages, 5) }).map((_, i) => {
+              const p = i + 1;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={cn(
+                    "w-8 h-8 rounded-lg text-xs font-medium transition-all",
+                    page === p
+                      ? "gradient-bg text-white"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  {p}
+                </button>
+              );
+            })}
+            {pages > 5 && <span className="text-muted-foreground text-xs px-1">…</span>}
+          </div>
+          <Button
+            variant="outline" size="sm"
+            disabled={page === pages}
+            onClick={() => setPage((p) => p + 1)}
+            className="h-8 px-3 text-xs gap-1"
+          >
+            Next<ChevronRight className="w-3.5 h-3.5" />
           </Button>
-        </div>
+        </motion.div>
       )}
     </div>
   );

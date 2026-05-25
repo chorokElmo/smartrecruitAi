@@ -1,46 +1,95 @@
 "use client";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Bell, Search } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Sun, Moon, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function TopBar() {
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/jobs": "Browse Jobs",
+  "/saved": "Saved Jobs",
+  "/cv": "My CV",
+  "/profile": "Profile",
+};
+
+interface TopBarProps {
+  onMenuToggle?: () => void;
+}
+
+export function TopBar({ onMenuToggle }: TopBarProps) {
   const user = useAuthStore((s) => s.user);
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
 
   const initials = [user?.first_name?.[0], user?.last_name?.[0]]
     .filter(Boolean).join("").toUpperCase() || "U";
 
+  // Resolve page title (handle dynamic routes like /jobs/[id])
+  const baseRoute = "/" + (pathname.split("/")[1] ?? "");
+  const pageTitle = pageTitles[baseRoute] ?? "SmartRecruit AI";
+  const isJobDetail = pathname.startsWith("/jobs/") && pathname !== "/jobs";
+
   return (
-    <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-30">
-      {/* Greeting */}
-      <div>
-        <p className="text-sm font-semibold text-foreground">
-          Good day, {user?.first_name ?? "there"} 👋
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {new Date().toLocaleDateString("en-MA", { weekday: "long", month: "long", day: "numeric" })}
-        </p>
+    <header
+      className="h-14 border-b border-border bg-card/90 backdrop-blur-md flex items-center gap-3 px-4 sticky top-0 z-30"
+      style={{ boxShadow: "0 1px 0 hsl(var(--border))" }}
+    >
+      {/* Hamburger (mobile) */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden w-8 h-8 rounded-lg shrink-0"
+        onClick={onMenuToggle}
+        aria-label="Open menu"
+      >
+        <Menu className="w-4 h-4" />
+      </Button>
+
+      {/* Page title / breadcrumb */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-sm">
+          {isJobDetail ? (
+            <>
+              <span className="text-muted-foreground font-medium hidden sm:inline">Jobs</span>
+              <span className="text-muted-foreground hidden sm:inline">/</span>
+              <span className="font-semibold text-foreground truncate max-w-[200px]">Detail</span>
+            </>
+          ) : (
+            <span className="font-semibold text-foreground">{pageTitle}</span>
+          )}
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 shrink-0">
+        {/* Theme toggle */}
         <Button
-          variant="ghost" size="icon"
-          className="w-9 h-9 rounded-xl"
+          variant="ghost"
+          size="icon"
+          className="w-8 h-8 rounded-lg"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          aria-label="Toggle theme"
         >
           {theme === "dark"
-            ? <Sun className="w-4 h-4 text-amber-500" />
-            : <Moon className="w-4 h-4" />
+            ? <Sun className="w-4 h-4 text-amber-400" />
+            : <Moon className="w-4 h-4 text-muted-foreground" />
           }
         </Button>
-        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500" />
+
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg relative" aria-label="Notifications">
+          <Bell className="w-4 h-4 text-muted-foreground" />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
         </Button>
-        <div className="ml-2 flex items-center gap-2.5 pl-2.5 border-l border-border/60">
-          <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center text-white text-xs font-bold shadow-md shadow-indigo-500/25">
+
+        {/* Avatar */}
+        <div className="ml-1 pl-2 border-l border-border flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center text-white text-xs font-bold"
+            style={{ boxShadow: "var(--shadow-primary)" }}
+            title={`${user?.first_name} ${user?.last_name}`}
+          >
             {initials}
           </div>
           <div className="hidden sm:block">
