@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, MapPin, Building2, Calendar,
   ExternalLink, CheckCircle2, XCircle, Loader2,
-  Sparkles, Bookmark, Clock,
+  Sparkles, Bookmark, BookmarkCheck, Clock,
 } from "lucide-react";
 
 function SkeletonDetail() {
@@ -52,6 +52,8 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savePending, setSavePending] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -59,8 +61,28 @@ export default function JobDetailPage() {
       recommendationsApi.getAll()
         .then((r) => setRec(r.data.find((x: Recommendation) => x.job.id === id) ?? null))
         .catch(() => {}),
+      jobsApi.getSaved()
+        .then((r) => setIsSaved(r.data.some((j: Job) => j.id === id)))
+        .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [id]);
+
+  const handleToggleSave = async () => {
+    setSavePending(true);
+    try {
+      if (isSaved) {
+        await jobsApi.unsave(id);
+        setIsSaved(false);
+      } else {
+        await jobsApi.save(id);
+        setIsSaved(true);
+      }
+    } catch {
+      // ignore — stay in current state
+    } finally {
+      setSavePending(false);
+    }
+  };
 
   if (loading) return (
     <div className="max-w-3xl mx-auto pt-4">
@@ -198,8 +220,22 @@ export default function JobDetailPage() {
                 <ExternalLink className="w-3.5 h-3.5" />Apply
               </Button>
             )}
-            <Button variant="outline" className="h-9 px-3 text-sm gap-2">
-              <Bookmark className="w-3.5 h-3.5" />Save
+            <Button
+              variant="outline"
+              className={`h-9 px-3 text-sm gap-2 transition-all ${
+                isSaved ? "text-primary border-primary/40 bg-primary/5" : ""
+              }`}
+              onClick={handleToggleSave}
+              disabled={savePending}
+            >
+              {savePending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : isSaved ? (
+                <BookmarkCheck className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Bookmark className="w-3.5 h-3.5" />
+              )}
+              {isSaved ? "Saved" : "Save"}
             </Button>
           </div>
         </div>

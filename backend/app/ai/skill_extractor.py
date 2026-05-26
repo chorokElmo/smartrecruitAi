@@ -19,7 +19,8 @@ def _load_skills() -> list[str]:
     skills = []
     for category_skills in taxonomy.values():
         skills.extend(category_skills)
-    _ALL_SKILLS = skills
+    # Deduplicate taxonomy (some skills appear in multiple categories)
+    _ALL_SKILLS = list(dict.fromkeys(skills))
     return _ALL_SKILLS
 
 
@@ -34,11 +35,13 @@ def extract_skills(text: str) -> list[str]:
     all_skills = _load_skills()
     text_lower = text.lower()
     found: list[str] = []
+    seen: set[str] = set()
 
     for skill in all_skills:
         # Build a regex pattern with word boundaries for accurate matching
         pattern = r"\b" + re.escape(skill.lower()) + r"\b"
-        if re.search(pattern, text_lower):
+        if re.search(pattern, text_lower) and skill not in seen:
             found.append(skill)
+            seen.add(skill)
 
     return found

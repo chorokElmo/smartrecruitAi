@@ -4,6 +4,8 @@ from typing import Optional
 from app.database import get_db
 from app.schemas.job import JobCreate, JobResponse, JobListResponse
 from app.services.job_service import JobService
+from app.services.saved_job_service import SavedJobService
+from app.core.dependencies import get_current_user_id
 
 router = APIRouter()
 
@@ -30,6 +32,37 @@ def list_jobs(
         location=location,
         contract_type=contract_type,
     )
+
+
+# ── Saved jobs ── (must be before /{job_id} to avoid route shadowing)
+
+@router.get("/saved", response_model=list[JobResponse])
+def get_saved_jobs(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return all jobs bookmarked by the current user."""
+    return SavedJobService(db).get_saved(user_id)
+
+
+@router.post("/{job_id}/save", response_model=JobResponse, status_code=201)
+def save_job(
+    job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Bookmark a job for the current user."""
+    return SavedJobService(db).save_job(user_id, job_id)
+
+
+@router.delete("/{job_id}/save", status_code=204)
+def unsave_job(
+    job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Remove a job bookmark for the current user."""
+    SavedJobService(db).unsave_job(user_id, job_id)
 
 
 @router.get("/{job_id}", response_model=JobResponse)
