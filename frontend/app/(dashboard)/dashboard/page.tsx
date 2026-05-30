@@ -94,6 +94,11 @@ function RecRow({ rec, index }: { rec: Recommendation; index: number }) {
                   <MapPin className="w-3 h-3 shrink-0" />{rec.job.location}</>
               )}
             </p>
+            {rec.explanation && (
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
+                {rec.explanation}
+              </p>
+            )}
           </div>
 
           {/* Matching skills count */}
@@ -128,7 +133,12 @@ export default function DashboardPage() {
       const { data } = await recommendationsApi.generate();
       setRecs(data);
     } catch (e: any) {
-      alert(e.response?.data?.detail ?? "Upload a CV first to get AI matches.");
+      const msg =
+        e.response?.data?.detail ??
+        (e.code === "ERR_NETWORK"
+          ? "Cannot connect to the server. Make sure the backend is running."
+          : "Upload a CV first to get AI matches.");
+      alert(msg);
     } finally {
       setGenerating(false);
     }

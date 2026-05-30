@@ -27,3 +27,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+// Debug helper — remove before production
+if (typeof window !== "undefined") {
+  (window as any).__checkToken = () => {
+    const t = localStorage.getItem("access_token");
+    console.log("Token:", t ? t.substring(0, 40) + "..." : "MISSING");
+  };
+}

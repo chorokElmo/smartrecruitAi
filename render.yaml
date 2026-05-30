@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: smartrecruit-api
+    runtime: python
+    rootDir: backend          # all commands run from backend/
+    region: frankfurt         # closest to Morocco (EU-West)
+    plan: free
+
+    # ── Build ─────────────────────────────────────────────────────
+    # build.sh: pip install → spaCy model → cache HF model → (migrations via preDeployCommand)
+    buildCommand: bash build.sh
+
+    # ── Migrations ────────────────────────────────────────────────
+    # Runs AFTER build, BEFORE the new instance goes live.
+    # DATABASE_URL is available here.
+    preDeployCommand: alembic upgrade head
+
+    # ── Start ─────────────────────────────────────────────────────
+    # Render injects $PORT — do NOT hardcode 8000 here.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    # ── Health check ──────────────────────────────────────────────
+    healthCheckPath: /
+
+    # ── Environment variables ─────────────────────────────────────
+    envVars:
+      # Set manually in Render dashboard after creating the service.
+      # Get this from your Neon project → Connection Details → Connection string.
+      # Example: postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+
+      # Auto-generated random 64-char string — safe for JWT signing.
+      - key: SECRET_KEY
+        generateValue: true
+
+      # Your Vercel deployment URL (no trailing slash).
+      # Example: https://smartrecruit-ai.vercel.app
+      # Comma-separated if you have preview URLs too:
+      #   https://smartrecruit-ai.vercel.app,https://smartrecruit-ai-git-main.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+      # Tells sentence-transformers where to cache the model.
+      # This folder is created during build and survives deploys.
+      - key: SENTENCE_TRANSFORMERS_HOME
+        value: ./st_model_cache
+
+      - key: PYTHON_VERSION
+        value: 3.12.0
+
+      - key: ENVIRONMENT
+        value: production

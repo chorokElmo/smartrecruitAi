@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Float, DateTime, ForeignKey, JSON, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -12,9 +12,12 @@ class Recommendation(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
-    score = Column(Float, nullable=False)          # 0.0 – 1.0
+    score = Column(Float, nullable=False)          # 0.0 – 1.0  combined hybrid score
+    semantic_score = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))
+    keyword_score  = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))
     matching_skills = Column(JSON, nullable=False, default=list)
-    missing_skills = Column(JSON, nullable=False, default=list)
+    missing_skills  = Column(JSON, nullable=False, default=list)
+    explanation     = Column(JSON, nullable=True)  # human-readable score breakdown
     generated_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="recommendations")

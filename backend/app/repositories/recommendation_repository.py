@@ -19,11 +19,14 @@ class RecommendationRepository:
 
     def upsert(
         self,
-        user_id: uuid.UUID,
-        job_id: uuid.UUID,
-        score: float,
-        matching: list[str],
-        missing: list[str],
+        user_id:        uuid.UUID,
+        job_id:         uuid.UUID,
+        score:          float,
+        matching:       list[str],
+        missing:        list[str],
+        semantic_score: float = 0.0,
+        keyword_score:  float = 0.0,
+        explanation:    str   = "",
     ) -> Recommendation:
         existing = (
             self.db.query(Recommendation)
@@ -31,19 +34,25 @@ class RecommendationRepository:
             .first()
         )
         if existing:
-            existing.score = score
+            existing.score          = score
+            existing.semantic_score = semantic_score
+            existing.keyword_score  = keyword_score
             existing.matching_skills = matching
-            existing.missing_skills = missing
+            existing.missing_skills  = missing
+            existing.explanation     = explanation
             self.db.commit()
             self.db.refresh(existing)
             return existing
 
         rec = Recommendation(
-            user_id=user_id,
-            job_id=job_id,
-            score=score,
-            matching_skills=matching,
-            missing_skills=missing,
+            user_id         = user_id,
+            job_id          = job_id,
+            score           = score,
+            semantic_score  = semantic_score,
+            keyword_score   = keyword_score,
+            matching_skills = matching,
+            missing_skills  = missing,
+            explanation     = explanation,
         )
         self.db.add(rec)
         self.db.commit()

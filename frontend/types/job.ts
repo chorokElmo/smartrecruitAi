@@ -16,7 +16,10 @@ export interface Recommendation {
   id: string;
   job: Job;
   score: number;
+  semantic_score: number;
+  keyword_score: number;
   matching_skills: string[];
   missing_skills: string[];
+  explanation: string;
   generated_at: string;
 }

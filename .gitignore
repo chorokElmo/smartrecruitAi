@@ -61,3 +61,10 @@ Thumbs.db
 # ─── Logs ─────────────────────────────────────────────
 *.log
 logs/
+
+# --- Claude Code session files ---
+.claude/
+frontend/.claude/
+
+# --- AI model cache (downloaded during Render build) ---
+backend/st_model_cache/
