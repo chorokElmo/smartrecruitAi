@@ -9,11 +9,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Zustand persist rehydrates from localStorage asynchronously after the first
+  // render. Without this flag the layout fires router.push("/login") before the
+  // stored token is available, logging out the user on every page refresh.
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login");
-  }, [isAuthenticated, router]);
+    if (hydrated && !isAuthenticated) router.push("/login");
+  }, [hydrated, isAuthenticated, router]);
 
+  if (!hydrated) return null;   // wait for localStorage → store sync
   if (!isAuthenticated) return null;
 
   return (
