@@ -1,0 +1,99 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SmartRecruit AI — Docker Compose
+#
+# Usage:
+#   docker compose up --build          # first run (downloads AI models ~800 MB)
+#   docker compose up                  # subsequent runs (models cached in volume)
+#   docker compose down                # stop all containers
+#   docker compose down -v             # stop + delete all volumes (wipes DB)
+#
+# Prerequisites:
+#   1. Copy backend/.env.example → .env in this directory and fill in SECRET_KEY.
+#      All other variables have working defaults for local Docker development.
+#   2. Docker Desktop (or Docker Engine + Compose plugin) installed.
+#
+# Services:
+#   db        — PostgreSQL 16 (port 5432, internal only)
+#   backend   — FastAPI / uvicorn  (http://localhost:8000)
+#   frontend  — Next.js 15         (http://localhost:3000)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-smartrecruit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartrecruit_pass}
+      POSTGRES_DB:       ${POSTGRES_DB:-smartrecruit_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-smartrecruit} -d ${POSTGRES_DB:-smartrecruit_db}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not exposed on host — backend connects via internal network name "db"
+
+  # ── FastAPI backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Overrides the DATABASE_URL from backend/.env so it points to the db
+      # service (hostname "db") instead of localhost.
+      DATABASE_URL: >-
+        postgresql://${POSTGRES_USER:-smartrecruit}:${POSTGRES_PASSWORD:-smartrecruit_pass}@db:5432/${POSTGRES_DB:-smartrecruit_db}
+
+      SECRET_KEY:                    ${SECRET_KEY:-changethiskey_replacewithsecurevalue}
+      ALGORITHM:                     ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES:   ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+
+      # Allow requests from the frontend container and local browser
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+
+      UPLOAD_DIR:                    uploads
+      ENVIRONMENT:                   production
+
+      # Sentence-transformers model is cached inside the named volume so it
+      # survives container rebuilds (no re-download on every `docker compose up`).
+      SENTENCE_TRANSFORMERS_HOME:    /app/st_model_cache
+    volumes:
+      - backend_uploads:/app/uploads
+      - st_model_cache:/app/st_model_cache
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Next.js frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the Next.js standalone bundle at build time.
+        # Uses the Docker Compose internal hostname "backend" so the Next.js
+        # server-side rewrite proxy forwards requests to the correct container.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api/v1}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8000/api/v1}
+    depends_on:
+      - backend
+
+
+# ── Named volumes ──────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:       # PostgreSQL data — persists across container restarts
+  backend_uploads:     # Uploaded CV files
+  st_model_cache:      # sentence-transformers model (~80 MB) — avoids re-download
