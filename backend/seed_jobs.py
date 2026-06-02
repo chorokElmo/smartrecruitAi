@@ -23,6 +23,7 @@ JOBS = [
         "required_skills": ["Python", "FastAPI", "React", "PostgreSQL", "Docker", "Git"],
         "contract_type": "CDI",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=Full+Stack+Python+React+Maroc",
         "deadline": now() + timedelta(days=30),
     },
     {
@@ -36,6 +37,7 @@ JOBS = [
         "required_skills": ["Java", "Spring Boot", "SQL", "REST API", "Maven", "Git"],
         "contract_type": "Stage",
         "source_name": "ANAPEC",
+        "source_url": "https://www.anapec.org/sigec-app-rv/chercheurs/affichageOffre/index/annonce/",
         "deadline": now() + timedelta(days=20),
     },
     {
@@ -49,6 +51,7 @@ JOBS = [
         "required_skills": ["Python", "Machine Learning", "NLP", "scikit-learn", "Pandas", "NumPy", "SQL"],
         "contract_type": "CDI",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=Data+Scientist+NLP+Maroc",
         "deadline": now() + timedelta(days=45),
     },
     {
@@ -62,6 +65,7 @@ JOBS = [
         "required_skills": ["Docker", "Kubernetes", "CI/CD", "Linux", "AWS", "Terraform", "Git"],
         "contract_type": "CDI",
         "source_name": "Company Website",
+        "source_url": "https://www.iam.ma/particuliers/Espace-Recrutement.html",
         "deadline": now() + timedelta(days=25),
     },
     {
@@ -75,6 +79,7 @@ JOBS = [
         "required_skills": ["React", "Next.js", "TypeScript", "Tailwind CSS", "Git", "REST API"],
         "contract_type": "CDD",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=Frontend+React+Next.js+Maroc",
         "deadline": now() + timedelta(days=15),
     },
     {
@@ -88,6 +93,7 @@ JOBS = [
         "required_skills": ["Flutter", "Dart", "REST API", "Git", "Agile"],
         "contract_type": "Stage",
         "source_name": "ANAPEC",
+        "source_url": "https://www.anapec.org/sigec-app-rv/chercheurs/affichageOffre/index/annonce/",
         "deadline": now() + timedelta(days=18),
     },
     {
@@ -101,6 +107,7 @@ JOBS = [
         "required_skills": ["Python", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "SQL"],
         "contract_type": "CDI",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=AI+Engineer+Deep+Learning+Maroc",
         "deadline": now() + timedelta(days=35),
     },
     {
@@ -114,6 +121,7 @@ JOBS = [
         "required_skills": ["JavaScript", "Node.js", "Express", "PostgreSQL", "Redis", "Docker", "Git"],
         "contract_type": "CDI",
         "source_name": "Company Website",
+        "source_url": "https://www.sofrecom.com/fr/rejoignez-nous/offres-emploi.html",
         "deadline": now() + timedelta(days=40),
     },
     {
@@ -127,6 +135,7 @@ JOBS = [
         "required_skills": ["SQL", "Power BI", "Excel", "Python", "Pandas", "Data Analysis"],
         "contract_type": "Stage",
         "source_name": "ANAPEC",
+        "source_url": "https://www.anapec.org/sigec-app-rv/chercheurs/affichageOffre/index/annonce/",
         "deadline": now() + timedelta(days=12),
     },
     {
@@ -140,6 +149,7 @@ JOBS = [
         "required_skills": ["Python", "FastAPI", "PostgreSQL", "Docker", "REST API", "Git", "Agile"],
         "contract_type": "CDI",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=Python+FastAPI+Developer+Maroc",
         "deadline": now() + timedelta(days=28),
     },
     {
@@ -153,6 +163,7 @@ JOBS = [
         "required_skills": ["Linux", "PostgreSQL", "Bash", "Nginx", "Git"],
         "contract_type": "CDI",
         "source_name": "Emploi Public",
+        "source_url": "https://www.emploi-public.ma/fr/concoursListe.aspx",
         "deadline": now() + timedelta(days=50),
     },
     {
@@ -166,6 +177,7 @@ JOBS = [
         "required_skills": ["JavaScript", "Vue", "Node.js", "MongoDB", "REST API", "Git", "Scrum"],
         "contract_type": "CDI",
         "source_name": "LinkedIn",
+        "source_url": "https://www.linkedin.com/jobs/search/?keywords=Full+Stack+JavaScript+Maroc",
         "deadline": now() + timedelta(days=22),
     },
 ]

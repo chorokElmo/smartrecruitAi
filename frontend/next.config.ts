@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Required for the multi-stage Docker build (copies .next/standalone)
+  output: "standalone",
+
   async rewrites() {
     return [
       {
