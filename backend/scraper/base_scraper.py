@@ -257,6 +257,16 @@ class BaseScraper(ABC):
                 msg = f"Save failed for '{job_data.get('title', '?')}': {e}"
                 self.logger.error(msg)
                 self.result.errors.append(msg)
+                # IMPORTANT: after any DB error the session enters a "needs
+                # rollback" state.  If we don't rollback here, the failed Job
+                # object stays pending and every subsequent db.commit() tries to
+                # re-INSERT it → cascading UniqueViolation errors for all the
+                # remaining cards.  Rolling back resets the session cleanly so
+                # the next card starts with a fresh transaction.
+                try:
+                    self.db.rollback()
+                except Exception:
+                    pass
 
     def run(self) -> ScraperResult:
         """

@@ -181,6 +181,10 @@ class JobRepository:
             for row in rows
         ]
 
+    def count_active(self) -> int:
+        """Return the number of active jobs — used at startup to decide whether to seed/scrape."""
+        return self.db.query(Job).filter(Job.is_active == True).count()
+
     def get_distinct_sources(self) -> list[str]:
         """
         Return all distinct source_name values in the DB.

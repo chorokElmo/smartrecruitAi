@@ -5,21 +5,32 @@ SITE: https://www.rekrute.com
 LANGUAGE: French / Arabic
 TARGET: Listing pages only (no detail-page fetching to keep HTTP requests low)
 
-HOW THE SITE IS STRUCTURED:
+HOW THE SITE IS STRUCTURED (updated June 2026 after HTML change):
   Listing URL: https://www.rekrute.com/offres.html?s=1&p={page}&o=1
 
   Each job card:
-  <li class="li-offre-container">
-    <div class="holder">
-      <h2 class="title">
-        <a href="/offre-emploi-{slug}.html">Job Title</a>
-      </h2>
-      <span class="company">Company Name</span>
-      <span class="location"><i class="fa fa-map-marker"></i> Casablanca</span>
-      <span class="type-contract">CDI</span>
-      <p class="description">Short job description...</p>
+  <li class="post-id" id="{job_id}">
+    <div>
+      <div class="col-sm-2">
+        <a href="/recruteur-{company_slug}.html">
+          <img alt="Company Name" .../>
+        </a>
+      </div>
+      <div class="col-sm-10">
+        <div class="section1">
+          <h2 class="titreJob">
+            <a class="titreJob" href="/offre-emploi-{slug}.html">Job Title | City (Maroc)</a>
+          </h2>
+          <!-- A second link may appear with ?#matching4K suffix — ignore it -->
+          <ul class="info-post">
+            <li><span>Company Name</span></li>
+            <li><i class="fa-map-marker"></i> Casablanca</li>
+            <li>CDI</li>
+          </ul>
+          <p class="description">Short job description...</p>
+        </div>
+      </div>
     </div>
-    <div class="deadline">Expire le: 15/07/2026</div>
   </li>
 
   Pagination: ?p=1, ?p=2, ... until we see an empty page or "No results"
@@ -64,13 +75,36 @@ class RekruteScraper(BaseScraper):
     MAX_PAGES      = 10      # scrape up to 10 pages (~200 jobs)
     JOBS_PER_PAGE  = 20
 
-    # CSS selectors — update these if the site changes structure
-    _SEL_JOB_CARD    = "li.li-offre-container"
-    _SEL_TITLE       = "h2.title a, h3.title a, .post-title a"
-    _SEL_COMPANY     = ".company, .info-company, .recruteur"
-    _SEL_LOCATION    = ".location, .ville, .adresse"
-    _SEL_CONTRACT    = ".type-contract, .contrat, .type-poste"
+    # ── CSS selectors (updated June 2026) ─────────────────────
+    # Primary card: <li class="post-id" id="{id}">
+    _SEL_JOB_CARD    = "li.post-id"
+
+    # Title link: <a class="titreJob" href="/offre-emploi-...">
+    # One card may have two links: the real one + one with ?#matching4K → ignore the latter
+    _SEL_TITLE       = "a.titreJob"
+
+    # Company: try several possible containers
+    _SEL_COMPANY     = (
+        ".info-post li:first-child span, "
+        ".info-post .company, "
+        ".entreprise, "
+        ".info-company, "
+        ".recruteur"
+    )
+
+    # Company from logo img alt text (fallback)
+    _SEL_COMPANY_IMG = "img[alt]"   # in col-sm-2
+
+    # Location: icon + text inside info-post
+    _SEL_LOCATION    = ".info-post .location, .ville, .adresse"
+
+    # Contract type
+    _SEL_CONTRACT    = ".info-post .type-contract, .contrat, .type-poste"
+
+    # Description excerpt
     _SEL_DESCRIPTION = ".description, .texte-offre, p.info"
+
+    # Deadline
     _SEL_DEADLINE    = ".date-limite, .deadline, .date-expiration"
 
     def fetch_jobs(self) -> list[dict]:
@@ -115,7 +149,7 @@ class RekruteScraper(BaseScraper):
         """
         soup = BeautifulSoup(html, "lxml")
 
-        # Try primary selector, then fall back to simpler ones
+        # Primary selector (updated June 2026)
         cards = soup.select(self._SEL_JOB_CARD)
 
         if not cards:
@@ -124,44 +158,102 @@ class RekruteScraper(BaseScraper):
                 li for li in soup.find_all("li")
                 if li.find("a", href=re.compile(r"/offre-emploi-"))
             ]
+            if cards:
+                self.logger.debug(
+                    f"Primary selector '{self._SEL_JOB_CARD}' found nothing — "
+                    f"fallback found {len(cards)} cards"
+                )
 
         raw_jobs = []
         for card in cards:
-            raw = self._card_to_dict(card, base_url)
-            if raw:
-                raw_jobs.append(raw)
+            try:
+                raw = self._card_to_dict(card, base_url)
+                if raw:
+                    raw_jobs.append(raw)
+            except Exception as e:
+                self.logger.warning(f"Card parse error: {e}")
+
         return raw_jobs
 
     def _card_to_dict(self, card, base_url: str) -> Optional[dict]:
         """Extract fields from a single job card element."""
 
         # ── Title + URL ───────────────────────────────────────
-        title_el = card.select_one(self._SEL_TITLE)
+        # Find all links that look like job URLs but exclude ?#matching4K variants
+        job_links = [
+            a for a in card.find_all("a", href=re.compile(r"/offre-emploi-"))
+            if "#matching4K" not in a.get("href", "")
+        ]
+
+        # Prefer <a class="titreJob"> first, then any clean job link
+        title_el = None
+        for a in job_links:
+            if "titreJob" in (a.get("class") or []):
+                title_el = a
+                break
+        if title_el is None and job_links:
+            title_el = job_links[0]
+
+        # Last resort: the CSS selector
         if title_el is None:
-            # Try any link that looks like a job URL
-            title_el = card.find("a", href=re.compile(r"/offre-emploi-"))
+            title_el = card.select_one(self._SEL_TITLE)
+
         if title_el is None:
+            self.logger.debug("Card skipped — no title link found")
             return None
 
-        title      = title_el.get_text(strip=True)
-        href       = title_el.get("href", "")
+        raw_title = title_el.get_text(strip=True)
+        href      = title_el.get("href", "")
         source_url = urljoin(base_url, href) if href else None
 
-        if not title:
+        if not raw_title:
             return None
 
+        # ── Parse "Job Title | City (Maroc)" format ───────────
+        # rekrute.com encodes title as "Poste | Ville (Maroc)"
+        title, location_from_title = self._split_title_location(raw_title)
+
         # ── Company ───────────────────────────────────────────
+        company = ""
+
+        # Attempt 1: structured selectors
         company_el = card.select_one(self._SEL_COMPANY)
-        company    = company_el.get_text(strip=True) if company_el else ""
+        if company_el:
+            company = company_el.get_text(strip=True)
+
+        # Attempt 2: company logo alt text in col-sm-2
+        if not company:
+            col2 = card.select_one(".col-sm-2, .logo, .company-logo")
+            if col2:
+                img = col2.find("img", alt=True)
+                if img:
+                    company = img["alt"].strip()
+
+        # Attempt 3: any <a> linking to a recruiter/company profile
+        if not company:
+            recruiter_link = card.find(
+                "a", href=re.compile(r"/(recruteur|entreprise|company)-")
+            )
+            if recruiter_link:
+                company = recruiter_link.get_text(strip=True)
+
+        # Fallback: label so we don't lose the job posting
+        if not company:
+            company = "Rekrute"
 
         # ── Location ──────────────────────────────────────────
+        location = ""
+
+        # Try CSS selector first
         location_el = card.select_one(self._SEL_LOCATION)
-        location    = ""
         if location_el:
-            # Strip icon text (e.g. Font Awesome glyphs)
             for icon in location_el.find_all("i"):
                 icon.decompose()
             location = location_el.get_text(strip=True)
+
+        # Fall back to what was embedded in the title text
+        if not location and location_from_title:
+            location = location_from_title
 
         # ── Contract type ─────────────────────────────────────
         contract_el   = card.select_one(self._SEL_CONTRACT)
@@ -196,11 +288,33 @@ class RekruteScraper(BaseScraper):
         The raw dict from _card_to_dict() is already mostly clean.
         This method validates required fields and passes it through.
         """
-        if not raw.get("title") or not raw.get("company"):
+        if not raw.get("title"):
             return None
+        # Company is required by BaseScraper but we always set a fallback,
+        # so this should never be empty here.
         return raw   # clean_data() in BaseScraper handles the rest
 
     # ── Helpers ───────────────────────────────────────────────
+
+    def _split_title_location(self, text: str) -> tuple[str, str]:
+        """
+        Rekrute job titles often have the format:
+            "Développeur Full Stack | Casablanca (Maroc)"
+            "Stage Data Science | Rabat (Maroc)"
+
+        This method splits them and cleans up the location suffix.
+
+        Returns:
+            (title, location) — both are stripped strings.
+            If no " | " is present, returns (text, "").
+        """
+        if " | " in text:
+            parts = text.split(" | ", 1)
+            job_title  = parts[0].strip()
+            # Remove "(Maroc)" suffix from city name
+            location   = re.sub(r"\s*\(Maroc\)\s*$", "", parts[1], flags=re.IGNORECASE).strip()
+            return job_title, location
+        return text.strip(), ""
 
     def _parse_french_date(self, text: str) -> Optional[str]:
         """

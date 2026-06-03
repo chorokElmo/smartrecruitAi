@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
+from app.models.job import Job
 from app.schemas.job import JobCreate, JobResponse, JobListResponse
 from app.services.job_service import JobService
 from app.services.saved_job_service import SavedJobService
@@ -32,6 +33,13 @@ def list_jobs(
         location=location,
         contract_type=contract_type,
     )
+
+
+@router.get("/count")
+def count_jobs(db: Session = Depends(get_db)):
+    """Return the total number of active job listings. Used on the frontend dashboard."""
+    count = db.query(Job).filter(Job.is_active == True).count()
+    return {"count": count}
 
 
 # ── Saved jobs ── (must be before /{job_id} to avoid route shadowing)

@@ -37,6 +37,7 @@ from typing import Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.database import SessionLocal
@@ -286,6 +287,53 @@ def start_scheduler() -> None:
 
     _scheduler.start()
     logger.info("Scheduler started — scraping every 6 hours, freshness check every hour")
+
+
+def _startup_rekrute_scrape() -> None:
+    """
+    One-time startup scrape: fetch 3 pages from Rekrute (~60 real jobs).
+    Called automatically when the DB has fewer than 50 active jobs.
+    Runs in a scheduler thread so it never blocks FastAPI startup.
+    """
+    db = SessionLocal()
+    try:
+        from scraper.rekrute_scraper import RekruteScraper
+
+        # Temporarily override MAX_PAGES for a lighter startup scrape
+        class _QuickRekrute(RekruteScraper):
+            MAX_PAGES = 3
+
+        scraper = _QuickRekrute(db)
+        result  = scraper.run()
+        _append_log(result.to_dict())
+        logger.info(
+            "[Startup] Rekrute quick-scrape done — "
+            f"added={result.jobs_added} skipped={result.jobs_skipped}"
+        )
+    except Exception as e:
+        logger.error(f"[Startup] Rekrute quick-scrape failed: {e}", exc_info=True)
+    finally:
+        db.close()
+
+
+def schedule_startup_scrape() -> None:
+    """
+    Add a one-time Rekrute scrape job that fires as soon as the scheduler is ready.
+    Safe to call even if the scheduler hasn't started yet — the job is added
+    before _scheduler.start() only if called from start_scheduler().
+    """
+    global _scheduler
+    if _scheduler is None:
+        logger.warning("[Startup] Cannot schedule startup scrape — scheduler not initialised")
+        return
+    _scheduler.add_job(
+        _startup_rekrute_scrape,
+        trigger=DateTrigger(),   # no run_date = fire immediately (next scheduler tick)
+        id="startup_scrape",
+        name="Startup Rekrute quick-scrape (3 pages)",
+        replace_existing=True,
+    )
+    logger.info("[Startup] One-time Rekrute scrape (3 pages) scheduled — will run in background")
 
 
 def stop_scheduler() -> None:
