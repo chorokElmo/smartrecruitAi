@@ -17,6 +17,7 @@ class JobService:
         search: str | None = None,
         location: str | None = None,
         contract_type: str | None = None,
+        sector: str | None = None,
     ) -> JobListResponse:
         items, total = self.repo.get_all(
             page=page,
@@ -24,6 +25,7 @@ class JobService:
             search=search,
             location=location,
             contract_type=contract_type,
+            sector=sector,
         )
         return JobListResponse(
             items=[JobResponse.model_validate(j) for j in items],

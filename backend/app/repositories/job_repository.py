@@ -53,7 +53,8 @@ class JobRepository:
         search: Optional[str] = None,
         location: Optional[str] = None,
         contract_type: Optional[str] = None,
-        sources: Optional[list[str]] = None,    # NEW: filter by source_name
+        sources: Optional[list[str]] = None,    # filter by source_name (website)
+        sector: Optional[str] = None,           # filter by sector: "private" | "public"
     ) -> tuple[list[Job], int]:
         """
         Return a paginated list of active jobs with optional filters.
@@ -90,6 +91,10 @@ class JobRepository:
         # Source filter: ?sources=Rekrute,Indeed  →  WHERE source_name IN ('Rekrute','Indeed')
         if sources:
             query = query.filter(Job.source_name.in_(sources))
+
+        # Sector filter: ?sector=public  →  WHERE sector = 'public'
+        if sector:
+            query = query.filter(Job.sector == sector)
 
         total = query.count()
         items = (

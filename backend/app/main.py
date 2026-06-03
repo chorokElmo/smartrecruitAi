@@ -27,6 +27,7 @@ import logging
 
 from app.routers import auth, users, jobs, cv, recommendations
 from app.routers import scrapers
+from app.routers import notifications
 from scraper.scheduler import start_scheduler, stop_scheduler, schedule_startup_scrape
 from scraper.utils import setup_scraper_logging
 from app.ai.embedder import warmup as embedder_warmup
@@ -132,6 +133,7 @@ app.include_router(jobs.router,            prefix=f"{prefix}/jobs",            t
 app.include_router(cv.router,              prefix=f"{prefix}/cv",              tags=["CV"])
 app.include_router(recommendations.router, prefix=f"{prefix}/recommendations", tags=["Recommendations"])
 app.include_router(scrapers.router,        prefix=f"{prefix}/scrapers",        tags=["Scrapers"])
+app.include_router(notifications.router,   prefix=f"{prefix}/notifications",   tags=["Notifications"])
 
 
 @app.get("/", tags=["Health"])

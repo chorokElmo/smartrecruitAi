@@ -168,16 +168,18 @@ def run_scraper_by_name(name: str) -> Optional[dict]:
         ScraperResult dict, or None if the name is not recognised.
     """
     # Import here to avoid circular imports at module load time
-    from scraper.remoteok_scraper import RemoteOkScraper
-    from scraper.rekrute_scraper   import RekruteScraper
-    from scraper.emploi_scraper    import EmploiScraper
-    from scraper.indeed_scraper    import IndeedScraper
+    from scraper.remoteok_scraper        import RemoteOkScraper
+    from scraper.rekrute_scraper         import RekruteScraper
+    from scraper.emploi_scraper          import EmploiScraper
+    from scraper.indeed_scraper          import IndeedScraper
+    from scraper.emploi_public_scraper   import EmploiPublicScraper
 
     REGISTRY = {
-        "remoteok": RemoteOkScraper,
-        "rekrute":  RekruteScraper,
-        "emploi.ma": EmploiScraper,
-        "indeed":   IndeedScraper,
+        "remoteok":         RemoteOkScraper,
+        "rekrute":          RekruteScraper,
+        "emploi.ma":        EmploiScraper,
+        "indeed":           IndeedScraper,
+        "emploi-public.ma": EmploiPublicScraper,
     }
 
     scraper_cls = REGISTRY.get(name.lower())
@@ -197,12 +199,13 @@ def run_all_scrapers() -> list[dict]:
     Returns:
         List of ScraperResult dicts (one per scraper).
     """
-    from scraper.remoteok_scraper import RemoteOkScraper
-    from scraper.rekrute_scraper   import RekruteScraper
-    from scraper.emploi_scraper    import EmploiScraper
-    from scraper.indeed_scraper    import IndeedScraper
+    from scraper.remoteok_scraper      import RemoteOkScraper
+    from scraper.rekrute_scraper       import RekruteScraper
+    from scraper.emploi_scraper        import EmploiScraper
+    from scraper.indeed_scraper        import IndeedScraper
+    from scraper.emploi_public_scraper import EmploiPublicScraper
 
-    SCRAPERS = [RemoteOkScraper, RekruteScraper, EmploiScraper, IndeedScraper]
+    SCRAPERS = [RemoteOkScraper, RekruteScraper, EmploiScraper, IndeedScraper, EmploiPublicScraper]
 
     logger.info("═══ Starting scheduled scrape run — all sources ═══")
     results = [_run_scraper(cls) for cls in SCRAPERS]
@@ -214,6 +217,78 @@ def run_all_scrapers() -> list[dict]:
         f"total_added={total_added} total_errors={total_errors} ═══"
     )
     return results
+
+
+def _send_deadline_notifications() -> None:
+    """
+    Daily job (8am): find public jobs with deadline ≤ 3 days,
+    create a Notification for every user who has that job in their
+    recommendations — unless a notification was already sent today.
+    """
+    from datetime import timedelta
+    from app.models.job import Job
+    from app.models.recommendation import Recommendation
+    from app.models.notification import Notification
+
+    db = SessionLocal()
+    try:
+        now  = datetime.now(timezone.utc)
+        soon = now + timedelta(days=3)
+
+        urgent_jobs = (
+            db.query(Job)
+            .filter(
+                Job.sector    == "public",
+                Job.deadline  != None,
+                Job.deadline  > now,
+                Job.deadline  <= soon,
+                Job.is_active == True,
+            )
+            .all()
+        )
+
+        created_count = 0
+        for job in urgent_jobs:
+            days_left = max(0, (job.deadline - now).days)
+            message   = (
+                f"⏰ Clôture imminente : « {job.title} » — "
+                f"il reste {days_left} jour(s) pour postuler !"
+            )
+
+            # Notify users who have this job in their recommendations
+            recs = db.query(Recommendation).filter(
+                Recommendation.job_id == job.id
+            ).all()
+
+            for rec in recs:
+                # Avoid duplicate notifications on the same day
+                today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                exists = (
+                    db.query(Notification.id)
+                    .filter(
+                        Notification.user_id    == rec.user_id,
+                        Notification.job_id     == job.id,
+                        Notification.created_at >= today,
+                    )
+                    .first()
+                )
+                if not exists:
+                    db.add(Notification(
+                        user_id=rec.user_id,
+                        job_id=job.id,
+                        message=message,
+                        is_read=False,
+                    ))
+                    created_count += 1
+
+        db.commit()
+        if created_count:
+            logger.info(f"[Notifications] Created {created_count} deadline alert(s)")
+
+    except Exception as e:
+        logger.error(f"[Notifications] Error sending deadline alerts: {e}", exc_info=True)
+    finally:
+        db.close()
 
 
 def _deactivate_expired_jobs() -> None:
@@ -282,6 +357,15 @@ def start_scheduler() -> None:
         trigger=IntervalTrigger(hours=1),
         id="deactivate_expired",
         name="Deactivate expired job listings",
+        replace_existing=True,
+    )
+
+    # Deadline notifications — every day at 8:00 AM
+    _scheduler.add_job(
+        _send_deadline_notifications,
+        trigger=CronTrigger(hour=8, minute=0),
+        id="deadline_notifications",
+        name="Send public-job deadline notifications",
         replace_existing=True,
     )
 

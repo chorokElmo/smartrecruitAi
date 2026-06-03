@@ -2,8 +2,9 @@
 import { useAuthStore } from "@/lib/store/authStore";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
-import { Sun, Moon, Bell, Menu } from "lucide-react";
+import { Sun, Moon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -77,11 +78,8 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           }
         </Button>
 
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg relative" aria-label="Notifications">
-          <Bell className="w-4 h-4 text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
-        </Button>
+        {/* Notifications — real bell with unread count badge */}
+        <NotificationBell />
 
         {/* Avatar */}
         <div className="ml-1 pl-2 border-l border-border flex items-center gap-2">

@@ -29,6 +29,9 @@ class JobCreate(BaseModel):
     # Deduplication fingerprint — injected by scraper pipeline
     fingerprint:     Optional[str]      = None
 
+    # Sector: "private" (default) | "public" (emploi-public.ma)
+    sector:          Optional[str]      = "private"
+
     # Lifecycle
     deadline:        Optional[datetime] = None
     expires_at:      Optional[datetime] = None
@@ -55,6 +58,9 @@ class JobResponse(BaseModel):
     source_url:      Optional[str]      = None
     source_name:     Optional[str]      = None
     scraped_at:      Optional[datetime] = None
+
+    # Sector
+    sector:          Optional[str]      = "private"
 
     # Freshness
     expires_at:      Optional[datetime] = None

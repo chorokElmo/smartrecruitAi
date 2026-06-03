@@ -35,6 +35,12 @@ class Job(Base):
     source_url  = Column(String(500), nullable=True)               # link to original posting
     scraped_at  = Column(DateTime(timezone=True), nullable=True)   # None for manually entered jobs
 
+    # ── Sector (private / public) ─────────────────────────────
+    # "public"  → emploi-public.ma, government organisations
+    # "private" → Rekrute, Indeed, RemoteOK, manual entries
+    # NULL      → legacy rows before this field was added
+    sector = Column(String(20), nullable=True, index=True, default="private")
+
     # ── Deduplication ─────────────────────────────────────────
     # SHA-256 of normalise(title)|normalise(company)|normalise(location)
     # Unique constraint prevents inserting the same job twice
@@ -50,8 +56,9 @@ class Job(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────
-    saved_by      = relationship("SavedJob",      back_populates="job", cascade="all, delete-orphan")
+    saved_by        = relationship("SavedJob",      back_populates="job", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="job", cascade="all, delete-orphan")
+    notifications   = relationship("Notification",   back_populates="job", cascade="all, delete-orphan")
 
     # ── Composite indexes for common query patterns ────────────
     __table_args__ = (

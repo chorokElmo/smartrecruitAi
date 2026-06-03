@@ -66,6 +66,7 @@ class User(Base):
     cvs             = relationship("CV",             back_populates="user", cascade="all, delete-orphan")
     saved_jobs      = relationship("SavedJob",       back_populates="user", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
+    notifications   = relationship("Notification",   back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.id} | {self.email!r} | role={self.role}>"

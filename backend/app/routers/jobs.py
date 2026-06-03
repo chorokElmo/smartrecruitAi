@@ -18,6 +18,7 @@ def list_jobs(
     search: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
     contract_type: Optional[str] = Query(None),
+    sector: Optional[str] = Query(None, description="Filter by sector: 'private' or 'public'"),
     db: Session = Depends(get_db),
 ):
     """
@@ -25,6 +26,7 @@ def list_jobs(
     - **search**: full-text search on title, company, description
     - **location**: filter by city
     - **contract_type**: CDI | CDD | Stage | Freelance
+    - **sector**: private | public (public sector = emploi-public.ma)
     """
     return JobService(db).list_jobs(
         page=page,
@@ -32,6 +34,7 @@ def list_jobs(
         search=search,
         location=location,
         contract_type=contract_type,
+        sector=sector,
     )
 
 
