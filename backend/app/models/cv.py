@@ -15,6 +15,12 @@ class CV(Base):
     original_name = Column(String(255), nullable=False)
     extracted_text = Column(Text, nullable=True)
     extracted_skills = Column(JSON, nullable=False, default=list)
+
+    # ── Richer extraction (Part 4) ────────────────────────────
+    diploma          = Column(String(100), nullable=True)   # "Master", "Licence", …
+    domain           = Column(String(100), nullable=True)   # most frequent skill category
+    years_experience = Column(String(20),  nullable=True)   # "3", "5+", etc.
+
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="cvs")

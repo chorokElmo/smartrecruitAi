@@ -6,6 +6,7 @@ from app.models.job import Job
 from app.schemas.job import JobCreate, JobResponse, JobListResponse
 from app.services.job_service import JobService
 from app.services.saved_job_service import SavedJobService
+from app.services.cover_letter_service import CoverLetterService
 from app.core.dependencies import get_current_user_id
 
 router = APIRouter()
@@ -80,6 +81,23 @@ def unsave_job(
 def get_job(job_id: str, db: Session = Depends(get_db)):
     """Get a single job by ID."""
     return JobService(db).get_job(job_id)
+
+
+@router.post("/{job_id}/cover-letter")
+def generate_cover_letter(
+    job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a personalised cover letter for this job using the candidate's
+    profile (name, skills, diploma, domain, years_experience) via Groq LLM.
+    Falls back to a structured template when the API key is absent.
+
+    Returns: { "cover_letter": "<full text>" }
+    """
+    letter = CoverLetterService(db).generate(user_id, job_id)
+    return {"cover_letter": letter}
 
 
 @router.post("", response_model=JobResponse, status_code=201)

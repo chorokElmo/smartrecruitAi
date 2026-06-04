@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import { jobsApi } from "@/lib/api/jobs";
+import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/authStore";
 import type { Recommendation, Job } from "@/types/job";
 import { ScoreRing } from "@/components/ui/score-ring";
@@ -13,7 +14,7 @@ import { itemVariants, listVariants } from "@/components/ui/page-wrapper";
 import {
   Brain, Sparkles, TrendingUp, BookmarkCheck,
   ArrowRight, RefreshCw, Briefcase, Star,
-  MapPin, Building2, ChevronRight,
+  MapPin, Building2, ChevronRight, Target, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,9 +28,9 @@ function useCountUp(target: number, duration = 900) {
     let start: number;
     const step = (ts: number) => {
       if (!start) start = ts;
-      const pct = Math.min((ts - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - pct, 3); // ease-out cubic
-      setValue(Math.round(eased * target));
+      const pct  = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - pct, 3);
+      setValue(Math.round(ease * target));
       if (pct < 1) frame.current = requestAnimationFrame(step);
     };
     frame.current = requestAnimationFrame(step);
@@ -48,19 +49,15 @@ function StatCard({
 }) {
   const count = useCountUp(value, 800);
   return (
-    <motion.div
-      variants={itemVariants}
-      transition={{ delay }}
-      className="card-base p-5 group"
-    >
+    <motion.div variants={itemVariants} transition={{ delay }} className="card-base p-5 group">
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${gradient}`}
-          style={{ boxShadow: "var(--shadow-primary)" }}>
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${gradient}`}
+          style={{ boxShadow: "var(--shadow-primary)" }}
+        >
           <Icon className="w-5 h-5 text-white" />
         </div>
-        <span className="text-3xl font-bold text-foreground animate-number-in">
-          {count}{suffix}
-        </span>
+        <span className="text-3xl font-bold text-foreground">{count}{suffix}</span>
       </div>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
     </motion.div>
@@ -73,35 +70,25 @@ function RecRow({ rec, index }: { rec: Recommendation; index: number }) {
     <motion.div variants={itemVariants} transition={{ delay: index * 0.05 }}>
       <Link href={`/jobs/${rec.job.id}`} className="block group">
         <div className="flex items-center gap-3 px-3 py-3 rounded-xl border border-transparent hover:border-border hover:bg-muted/50 transition-all duration-150">
-          {/* Rank */}
           <span className="text-xs font-semibold text-muted-foreground/50 w-4 shrink-0">
             {String(index + 1).padStart(2, "0")}
           </span>
-
-          {/* Score ring */}
           <ScoreRing score={rec.score} size={44} strokeWidth={4} />
-
-          {/* Info */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
               {rec.job.title}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
-              <Building2 className="w-3 h-3 shrink-0" />
-              {rec.job.company}
+              <Building2 className="w-3 h-3 shrink-0" />{rec.job.company}
               {rec.job.location && (
                 <><span className="text-border">·</span>
                   <MapPin className="w-3 h-3 shrink-0" />{rec.job.location}</>
               )}
             </p>
             {rec.explanation && (
-              <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
-                {rec.explanation}
-              </p>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{rec.explanation}</p>
             )}
           </div>
-
-          {/* Matching skills count */}
           <div className="hidden sm:flex items-center gap-1 shrink-0">
             <span className="text-xs text-muted-foreground">{rec.matching_skills.length} skills</span>
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:translate-x-0.5 transition-transform" />
@@ -112,13 +99,139 @@ function RecRow({ rec, index }: { rec: Recommendation; index: number }) {
   );
 }
 
+/* ── Roadmap card ─────────────────────────────── */
+function RoadmapCard({ hasSkills }: { hasSkills: boolean }) {
+  const [content, setContent]           = useState<string>("");
+  const [generatedAt, setGeneratedAt]   = useState<string>("");
+  const [cached, setCached]             = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [loadedOnce, setLoadedOnce]     = useState(false);
+
+  const load = async (force = false) => {
+    setLoading(true);
+    try {
+      const url = force ? "/recommendations/advice?force=true" : "/recommendations/advice";
+      const { data } = await apiClient.get(url);
+      setContent(data.content);
+      setGeneratedAt(data.generated_at);
+      setCached(data.cached);
+      setLoadedOnce(true);
+    } catch {
+      // Silently fail — user has no skills or server error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-load if user has skills
+  useEffect(() => {
+    if (hasSkills) load();
+  }, [hasSkills]);
+
+  const timeAgo = generatedAt
+    ? new Date(generatedAt).toLocaleDateString("fr-FR", {
+        day: "numeric", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      })
+    : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.36, duration: 0.35 }}
+      className="card-base overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
+            <Target className="w-3 h-3 text-white" />
+          </div>
+          <h2 className="text-sm font-semibold">🎯 Votre roadmap personnalisée</h2>
+          {cached && (
+            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+              en cache
+            </span>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs px-2 gap-1.5 text-muted-foreground hover:text-foreground"
+          onClick={() => load(true)}
+          disabled={loading || !hasSkills}
+        >
+          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+          Régénérer
+        </Button>
+      </div>
+
+      {/* Content */}
+      <div className="p-5">
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-10 gap-3"
+            >
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <p className="text-sm text-muted-foreground">
+                Génération de votre roadmap par IA…
+              </p>
+            </motion.div>
+          ) : !hasSkills ? (
+            <motion.div key="noskills" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <EmptyState
+                icon={Target}
+                title="Roadmap indisponible"
+                description="Ajoutez des compétences à votre profil ou uploadez un CV pour générer votre roadmap personnalisée."
+              />
+            </motion.div>
+          ) : content ? (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="space-y-3"
+            >
+              <pre className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                {content}
+              </pre>
+              {timeAgo && (
+                <p className="text-[11px] text-muted-foreground pt-2 border-t border-border">
+                  Généré le {timeAgo}
+                </p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <EmptyState
+                icon={Target}
+                title="Aucune roadmap générée"
+                description="Cliquez sur Régénérer pour créer votre plan de carrière personnalisé."
+                action={{ label: "Générer ma roadmap", onClick: () => load() }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+
 /* ── Page ─────────────────────────────────────── */
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [recs, setRecs]             = useState<Recommendation[]>([]);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [generating, setGenerating] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -132,30 +245,30 @@ export default function DashboardPage() {
     try {
       const { data } = await recommendationsApi.generate();
       setRecs(data);
-    } catch (e: any) {
+    } catch (e: unknown) {
       const msg =
-        e.response?.data?.detail ??
-        (e.code === "ERR_NETWORK"
-          ? "Cannot connect to the server. Make sure the backend is running."
-          : "Upload a CV first to get AI matches.");
+        (e as { response?: { data?: { detail?: string }; }; code?: string })?.response?.data?.detail ??
+        "Upload a CV first to get AI matches.";
       alert(msg);
     } finally {
       setGenerating(false);
     }
   };
 
-  const topScore = recs[0]?.score ?? 0;
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const topScore  = recs[0]?.score ?? 0;
+  const hour      = new Date().getHours();
+  const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const hasSkills = (user?.skills?.length ?? 0) > 0;
 
   const stats = [
-    { icon: Brain, label: "AI Matches", value: recs.length, gradient: "gradient-bg", delay: 0 },
-    { icon: Sparkles, label: "My Skills", value: user?.skills?.length ?? 0, gradient: "gradient-bg-emerald", delay: 0.06 },
-    { icon: TrendingUp, label: "Top Match", value: Math.round(topScore * 100), suffix: "%", gradient: "gradient-bg-amber", delay: 0.12 },
+    { icon: Brain,      label: "AI Matches",  value: recs.length,                     gradient: "gradient-bg",        delay: 0    },
+    { icon: Sparkles,   label: "My Skills",   value: user?.skills?.length ?? 0,        gradient: "gradient-bg-emerald", delay: 0.06 },
+    { icon: TrendingUp, label: "Top Match",   value: Math.round(topScore * 100), suffix: "%", gradient: "gradient-bg-amber", delay: 0.12 },
   ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+
       {/* ── Header ───────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -201,14 +314,13 @@ export default function DashboardPage() {
       {/* ── Main grid ────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-        {/* Recommendations — wider column */}
+        {/* Recommendations */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.35 }}
           className="lg:col-span-3 card-base overflow-hidden"
         >
-          {/* Card header */}
           <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
@@ -228,7 +340,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* List */}
           <div className="p-2">
             {loading ? (
               <div className="space-y-1.5 p-2">
@@ -249,7 +360,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Recent jobs — narrower column */}
+        {/* Recent jobs */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -305,7 +416,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Skills cloud ─────────────────────────── */}
-      {(user?.skills?.length ?? 0) > 0 && (
+      {hasSkills && (
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -337,6 +448,10 @@ export default function DashboardPage() {
           </motion.div>
         </motion.div>
       )}
+
+      {/* ── Roadmap card ─────────────────────────── */}
+      <RoadmapCard hasSkills={hasSkills} />
+
     </div>
   );
 }

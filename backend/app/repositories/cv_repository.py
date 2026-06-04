@@ -27,9 +27,20 @@ class CVRepository:
         self.db.refresh(cv)
         return cv
 
-    def update_extracted(self, cv: CV, text: str, skills: list[str]) -> CV:
-        cv.extracted_text = text
-        cv.extracted_skills = skills
+    def update_extracted(
+        self,
+        cv: CV,
+        text: str,
+        skills: list[str],
+        diploma: str | None = None,
+        domain: str | None = None,
+        years_experience: str | None = None,
+    ) -> CV:
+        cv.extracted_text    = text
+        cv.extracted_skills  = skills
+        cv.diploma           = diploma
+        cv.domain            = domain
+        cv.years_experience  = years_experience
         self.db.commit()
         self.db.refresh(cv)
         return cv

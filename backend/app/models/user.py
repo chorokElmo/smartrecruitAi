@@ -41,6 +41,8 @@ class User(Base):
     last_name  = Column(String(100), nullable=False)
     email      = Column(String(255), unique=True, nullable=False, index=True)
     diploma    = Column(String(255), nullable=True)
+    domain     = Column(String(100), nullable=True)   # e.g. "web_frameworks", "ai_ml"
+    years_experience = Column(String(20), nullable=True)   # e.g. "3", "5+"
     skills     = Column(JSON, nullable=False, default=list)
 
     # ── Auth ──────────────────────────────────────────────────
@@ -67,6 +69,7 @@ class User(Base):
     saved_jobs      = relationship("SavedJob",       back_populates="user", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
     notifications   = relationship("Notification",   back_populates="user", cascade="all, delete-orphan")
+    roadmap         = relationship("Roadmap",        back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.id} | {self.email!r} | role={self.role}>"

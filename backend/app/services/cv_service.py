@@ -7,13 +7,13 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.cv import CVResponse
 from app.utils.file_handler import save_upload
 from app.ai.cv_extractor import extract_text_from_pdf
-from app.ai.skill_extractor import extract_skills
+from app.ai.llm_extractor import extract_cv_data
 from app.core.exceptions import NotFoundError
 
 
 class CVService:
     def __init__(self, db: Session):
-        self.cv_repo = CVRepository(db)
+        self.cv_repo   = CVRepository(db)
         self.user_repo = UserRepository(db)
 
     async def upload_and_process(self, user_id: str, file: UploadFile) -> CVResponse:
@@ -33,17 +33,33 @@ class CVService:
         except ValueError:
             text = ""
 
-        # 4. Extract skills from text
-        skills = extract_skills(text) if text else []
+        # 4. Extract structured data — LLM first, regex fallback inside extract_cv_data
+        extraction = extract_cv_data(text) if text else None
+
+        skills           = extraction.skills           if extraction else []
+        diploma          = extraction.diploma           if extraction else None
+        domain           = extraction.domain            if extraction else None
+        years_experience = extraction.years_experience  if extraction else None
 
         # 5. Persist extracted data
-        cv = self.cv_repo.update_extracted(cv, text=text, skills=skills)
+        cv = self.cv_repo.update_extracted(
+            cv,
+            text=text,
+            skills=skills,
+            diploma=diploma,
+            domain=domain,
+            years_experience=years_experience,
+        )
 
-        # 6. Also sync skills to user profile
+        # 6. Sync richer data to user profile (never overwrite existing non-null values)
         user = self.user_repo.get_by_id(uuid.UUID(user_id))
         if user:
-            merged = list({*user.skills, *skills})
-            self.user_repo.update(user, {"skills": merged})
+            merged_skills = list({*user.skills, *skills})
+            updates: dict = {"skills": merged_skills}
+            if diploma          and not user.diploma:          updates["diploma"]          = diploma
+            if domain           and not user.domain:           updates["domain"]           = domain
+            if years_experience and not user.years_experience: updates["years_experience"] = years_experience
+            self.user_repo.update(user, updates)
 
         return CVResponse.model_validate(cv)
 

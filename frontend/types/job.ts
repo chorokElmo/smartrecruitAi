@@ -5,10 +5,13 @@ export interface Job {
   location?: string;
   description: string;
   required_skills: string[];
+  required_diploma?: string;
+  required_experience?: string;
   contract_type?: string;
   deadline?: string;
   source_url?: string;
   source_name?: string;
+  sector?: string;
   created_at: string;
 }
 
@@ -16,6 +19,9 @@ export interface Recommendation {
   id: string;
   job: Job;
   score: number;
+  skill_score: number;
+  title_score: number;
+  experience_score: number;
   semantic_score: number;
   keyword_score: number;
   matching_skills: string[];

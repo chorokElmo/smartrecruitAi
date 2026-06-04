@@ -1,27 +1,22 @@
 """
-RecommendationService — AI-powered job matching for a candidate.
+RecommendationService — AI-powered job matching.
 
-Phase 4 upgrade:
-  - Two-pass skill matching via SemanticMatcher (singleton, injected from router)
-  - Pass 1: exact case-insensitive keyword match
-  - Pass 2: semantic fuzzy match on unmatched skills (sentence-transformers)
-  - Score = (exact_count + Σ fuzzy_similarities) / total_required  → 0.0–1.0
-  - Full result: matching_skills, missing_skills, fuzzy_matches, explanation
+Score formula (Part 7):
+  final = skill_score × 0.60 + title_score × 0.25 + experience_score × 0.15
 
-PERFORMANCE NOTE
-────────────────
-  The old batch-encoding approach encoded user + ALL job texts in one huge
-  model call (~0.5s for 260 jobs).  The new per-job skill encoding is also
-  fast because:
-    - Only skill tokens are encoded (10–30 short strings), not full text
-    - Batch call covers (R + U) skills, not hundreds of full documents
-    - Per-job cost ≈ 5ms → 260 jobs ≈ 1.3s on CPU (acceptable for PFE)
-  If latency becomes a concern, add an async task queue (Celery/ARQ).
+  skill_score      : two-pass skill matcher (exact + semantic fuzzy), 0.0–1.0
+  title_score      : cosine similarity between user domain and job title, 0.0–1.0
+  experience_score : linear fit of candidate's years vs job requirement, 0.0–1.0
+                     defaults to 0.5 (neutral) when either side is unknown
+
+Backward compatible: SemanticMatcher.match() contract unchanged.
 """
 
+import re
 import uuid
 import logging
 
+import numpy as np
 from sqlalchemy.orm import Session
 
 from app.repositories.recommendation_repository import RecommendationRepository
@@ -29,46 +24,120 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.job_repository import JobRepository
 from app.schemas.recommendation import RecommendationResponse
 from app.core.exceptions import BadRequestError
+from app.ai.embedder import encode
 
 logger = logging.getLogger(__name__)
 
 # ── Configuration ──────────────────────────────────────────────
-SCORE_THRESHOLD  = 0.10   # minimum combined score to store a recommendation
-MAX_JOBS_SCANNED = 500    # cap to avoid scanning 10K+ jobs every request
-MAX_RECS         = 30     # store at most this many recommendations per user
+SCORE_THRESHOLD  = 0.10
+MAX_JOBS_SCANNED = 500
+MAX_RECS         = 30
 
+# Weights — must sum to 1.0
+W_SKILL      = 0.60
+W_TITLE      = 0.25
+W_EXPERIENCE = 0.15
+
+
+# ── Score component helpers ────────────────────────────────────
+
+def _parse_years(years_str: str | None) -> float | None:
+    """
+    Convert a years_experience string to a float.
+    '3'  → 3.0
+    '5+' → 5.0
+    None / '' → None
+    """
+    if not years_str:
+        return None
+    clean = years_str.replace("+", "").strip()
+    try:
+        return float(clean)
+    except ValueError:
+        return None
+
+
+def _compute_experience_score(user_years_str: str | None, required_years_str: str | None) -> float:
+    """
+    Linear decay: 1.0 when user meets/exceeds requirement, decays proportionally below.
+    Returns 0.5 (neutral) when either side is unknown.
+
+    Examples:
+      user=5, req=3  → 1.0
+      user=2, req=4  → 0.5  (50% coverage)
+      user=None       → 0.5
+    """
+    user_years = _parse_years(user_years_str)
+    req_years  = _parse_years(required_years_str)
+
+    if user_years is None or req_years is None or req_years <= 0:
+        return 0.5   # neutral — no penalty for missing data
+
+    return min(1.0, user_years / req_years)
+
+
+def _compute_title_score(user_domain: str | None, job_title: str) -> float:
+    """
+    Semantic similarity between user's professional domain and the job title.
+    Returns 0.5 (neutral) if user has no domain set.
+
+    Uses the same sentence-transformer already loaded at startup.
+    """
+    if not user_domain or not job_title:
+        return 0.5
+
+    try:
+        vecs = encode([user_domain, job_title])   # (2, 384) L2-normalised
+        sim  = float(np.clip(vecs[0] @ vecs[1], 0.0, 1.0))
+        return round(sim, 4)
+    except Exception as exc:
+        logger.debug("title_score encoding failed: %s", exc)
+        return 0.5
+
+
+def _build_explanation(
+    score:            float,
+    skill_score:      float,
+    title_score:      float,
+    experience_score: float,
+    matching_skills:  list[str],
+) -> str:
+    """
+    Human-readable one-liner for display in the frontend.
+    e.g. "Strong match (78%) — skills 82%, title 74%, exp 60%"
+    """
+    pct = int(score * 100)
+    if score >= 0.75:   label = "Strong match"
+    elif score >= 0.50: label = "Good match"
+    elif score >= 0.30: label = "Partial match"
+    else:               label = "Weak match"
+
+    skill_pct = int(skill_score      * 100)
+    title_pct = int(title_score      * 100)
+    exp_pct   = int(experience_score * 100)
+
+    base = f"{label} ({pct}%) — skills {skill_pct}%, title {title_pct}%, exp {exp_pct}%"
+    if matching_skills:
+        shown = ", ".join(matching_skills[:3])
+        tail  = f" +{len(matching_skills)-3} more" if len(matching_skills) > 3 else ""
+        base += f" | matched: {shown}{tail}"
+    return base
+
+
+# ── Main service ───────────────────────────────────────────────
 
 class RecommendationService:
     def __init__(self, db: Session, matcher=None):
-        """
-        Args:
-            db:      SQLAlchemy session (injected by FastAPI's get_db).
-            matcher: SemanticMatcher singleton from app.state (injected by
-                     get_matcher dependency).  Required for generate(); the
-                     GET route passes None since it only reads stored results.
-        """
         self.rec_repo  = RecommendationRepository(db)
         self.user_repo = UserRepository(db)
         self.job_repo  = JobRepository(db)
         self.matcher   = matcher
 
-    # ── Main: generate recommendations ────────────────────────
-
     def generate(self, user_id: str) -> list[RecommendationResponse]:
         """
         Run the full AI matching pipeline and persist results.
 
-        Steps:
-          1. Load user — raise 400 if not found or has no skills
-          2. Fetch up to MAX_JOBS_SCANNED active jobs
-          3. For each job: matcher.match(user_skills, job.required_skills)
-          4. Filter by SCORE_THRESHOLD, sort descending, keep top MAX_RECS
-          5. Delete old recommendations, persist new batch
-          6. Return list[RecommendationResponse]
-
-        Raises:
-            BadRequestError: user not found or has no skills.
-            RuntimeError:    called without a matcher injected.
+        Formula: final = skill×0.60 + title×0.25 + experience×0.15
         """
         if self.matcher is None:
             raise RuntimeError(
@@ -84,34 +153,56 @@ class RecommendationService:
             )
 
         logger.info(
-            "[Recs] Generating for user %s… (%d skills)",
-            user_id[:8], len(user.skills),
+            "[Recs] Generating for user %s… (%d skills, domain=%s, exp=%s)",
+            user_id[:8], len(user.skills), user.domain, user.years_experience,
         )
 
         jobs, _ = self.job_repo.get_all(page=1, size=MAX_JOBS_SCANNED)
         if not jobs:
             return []
 
-        logger.info("[Recs] Scoring %d jobs via two-pass skill matcher", len(jobs))
+        logger.info("[Recs] Scoring %d jobs (3-component formula)", len(jobs))
 
-        # ── Score each job ────────────────────────────────────
         scored: list[dict] = []
         for job in jobs:
-            result = self.matcher.match(user.skills, job.required_skills or [])
-            final  = result["score"]          # combined 0.0–1.0
+            # Component 1 — skill score (two-pass matcher)
+            skill_result = self.matcher.match(user.skills, job.required_skills or [])
+            skill_score  = skill_result["score"]
+
+            # Component 2 — title score (domain vs job title)
+            title_score = _compute_title_score(user.domain, job.title)
+
+            # Component 3 — experience score (years comparison)
+            exp_score = _compute_experience_score(
+                user.years_experience,
+                job.required_experience,
+            )
+
+            # Weighted final
+            final = round(
+                skill_score * W_SKILL
+                + title_score  * W_TITLE
+                + exp_score    * W_EXPERIENCE,
+                4,
+            )
 
             if final >= SCORE_THRESHOLD:
+                matching = skill_result["matching_skills"]
                 scored.append({
-                    "job":             job,
-                    "score":           round(final, 4),
-                    "semantic_score":  result["semantic_score"],
-                    "keyword_score":   result["keyword_score"],
-                    "matching_skills": result["matching_skills"],
-                    "missing_skills":  result["missing_skills"],
-                    "explanation":     result["explanation"],
+                    "job":              job,
+                    "score":            final,
+                    "skill_score":      round(skill_score, 4),
+                    "title_score":      round(title_score, 4),
+                    "experience_score": round(exp_score, 4),
+                    "semantic_score":   skill_result["semantic_score"],
+                    "keyword_score":    skill_result["keyword_score"],
+                    "matching_skills":  matching,
+                    "missing_skills":   skill_result["missing_skills"],
+                    "explanation":      _build_explanation(
+                        final, skill_score, title_score, exp_score, matching
+                    ),
                 })
 
-        # Sort descending, keep top MAX_RECS
         scored.sort(key=lambda x: x["score"], reverse=True)
         scored = scored[:MAX_RECS]
 
@@ -120,20 +211,22 @@ class RecommendationService:
             len(scored), SCORE_THRESHOLD, len(jobs),
         )
 
-        # ── Persist: delete old → save new ───────────────────
         saved = []
         try:
             self.rec_repo.delete_by_user(uuid.UUID(user_id))
             for entry in scored:
                 rec = self.rec_repo.upsert(
-                    user_id        = uuid.UUID(user_id),
-                    job_id         = entry["job"].id,
-                    score          = entry["score"],
-                    matching       = entry["matching_skills"],
-                    missing        = entry["missing_skills"],
-                    semantic_score = entry["semantic_score"],
-                    keyword_score  = entry["keyword_score"],
-                    explanation    = entry["explanation"],
+                    user_id          = uuid.UUID(user_id),
+                    job_id           = entry["job"].id,
+                    score            = entry["score"],
+                    matching         = entry["matching_skills"],
+                    missing          = entry["missing_skills"],
+                    semantic_score   = entry["semantic_score"],
+                    keyword_score    = entry["keyword_score"],
+                    skill_score      = entry["skill_score"],
+                    title_score      = entry["title_score"],
+                    experience_score = entry["experience_score"],
+                    explanation      = entry["explanation"],
                 )
                 saved.append(RecommendationResponse.model_validate(rec))
         except Exception as e:
@@ -141,8 +234,6 @@ class RecommendationService:
             raise
 
         return saved
-
-    # ── Read-only ─────────────────────────────────────────────
 
     def get_recommendations(self, user_id: str) -> list[RecommendationResponse]:
         """Return stored recommendations — no recomputation."""

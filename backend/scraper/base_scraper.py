@@ -204,17 +204,20 @@ class BaseScraper(ABC):
         }
 
         cleaned = {
-            "title":          (job.get("title") or "").strip()[:255],
-            "company":        (job.get("company") or "").strip()[:255],
-            "location":       (job.get("location") or "").strip()[:255],
-            "description":    (job.get("description") or "").strip()[:10_000],
-            "required_skills": job.get("required_skills") or [],
-            "contract_type":  None,
-            "source_name":    self.SOURCE_NAME,
-            "source_url":     job.get("source_url"),
-            "deadline":       job.get("deadline"),
-            "expires_at":     job.get("expires_at"),
-            "scraped_at":     datetime.now(timezone.utc).isoformat(),
+            "title":               (job.get("title") or "").strip()[:255],
+            "company":             (job.get("company") or "").strip()[:255],
+            "location":            (job.get("location") or "").strip()[:255],
+            "description":         (job.get("description") or "").strip()[:10_000],
+            "required_skills":     job.get("required_skills") or [],
+            "required_diploma":    job.get("required_diploma"),
+            "required_experience": job.get("required_experience"),
+            "contract_type":       None,
+            "source_name":         self.SOURCE_NAME,
+            "source_url":          job.get("source_url"),
+            "sector":              job.get("sector", "private"),
+            "deadline":            job.get("deadline"),
+            "expires_at":          job.get("expires_at"),
+            "scraped_at":          datetime.now(timezone.utc).isoformat(),
         }
 
         # Normalise contract type (case-insensitive lookup)
@@ -222,6 +225,36 @@ class BaseScraper(ABC):
         cleaned["contract_type"] = CONTRACT_MAP.get(raw_ct)
 
         return cleaned
+
+    def enrich_with_llm(self, job: dict) -> dict:
+        """
+        Enrich a cleaned job dict with LLM-extracted requirements.
+        Called only when description exists and required_skills is empty.
+        Falls back silently to the existing data if LLM is unavailable.
+        """
+        description = job.get("description", "")
+        if not description:
+            return job
+
+        try:
+            from app.ai.llm_extractor import extract_job_requirements
+            extraction = extract_job_requirements(description)
+
+            # Merge skills: prefer existing scraper skills if present
+            if not job.get("required_skills") and extraction.required_skills:
+                job["required_skills"] = extraction.required_skills
+
+            # Set diploma/experience only if not already present
+            if not job.get("required_diploma") and extraction.required_diploma:
+                job["required_diploma"] = extraction.required_diploma
+
+            if not job.get("required_experience") and extraction.required_experience:
+                job["required_experience"] = extraction.required_experience
+
+        except Exception as exc:
+            self.logger.debug("[LLM] Job enrichment skipped: %s", exc)
+
+        return job
 
     def save_jobs(self, jobs: list[dict]) -> None:
         """
@@ -293,7 +326,7 @@ class BaseScraper(ABC):
             self.result.jobs_found = len(raw_jobs)
             self.logger.info(f"[{self.SOURCE_NAME}] Fetched {len(raw_jobs)} raw jobs")
 
-            # Step 2 + 3: Parse and clean
+            # Step 2 + 3: Parse, clean, and LLM-enrich
             cleaned_jobs: list[dict] = []
             for raw in raw_jobs:
                 try:
@@ -303,7 +336,9 @@ class BaseScraper(ABC):
                     # Require at minimum a title and company
                     if not parsed.get("title") or not parsed.get("company"):
                         continue
-                    cleaned_jobs.append(self.clean_data(parsed))
+                    cleaned = self.clean_data(parsed)
+                    cleaned = self.enrich_with_llm(cleaned)   # LLM → regex fallback
+                    cleaned_jobs.append(cleaned)
                 except Exception as e:
                     msg = f"Parse/clean error: {e}"
                     self.logger.warning(msg)

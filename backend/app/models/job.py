@@ -23,12 +23,14 @@ class Job(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # ── Core fields ───────────────────────────────────────────
-    title          = Column(String(255), nullable=False, index=True)
-    company        = Column(String(255), nullable=False, index=True)
-    location       = Column(String(255), nullable=True)
-    description    = Column(Text, nullable=False)
-    required_skills = Column(JSON, nullable=False, default=list)
-    contract_type  = Column(String(50), nullable=True)   # CDI | CDD | Stage | Freelance
+    title               = Column(String(255), nullable=False, index=True)
+    company             = Column(String(255), nullable=False, index=True)
+    location            = Column(String(255), nullable=True)
+    description         = Column(Text, nullable=False)
+    required_skills     = Column(JSON, nullable=False, default=list)
+    required_diploma    = Column(String(100), nullable=True)   # "Master", "Licence", etc.
+    required_experience = Column(String(20),  nullable=True)   # "3", "5+", etc.
+    contract_type       = Column(String(50),  nullable=True)   # CDI | CDD | Stage | Freelance
 
     # ── Source / provenance ───────────────────────────────────
     source_name = Column(String(100), nullable=True, index=True)   # "Rekrute" | "Indeed" | "manual"

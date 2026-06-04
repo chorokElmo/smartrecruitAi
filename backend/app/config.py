@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Groq LLM — optional; falls back to regex if empty
+    GROQ_API_KEY: str = ""
+
     # File uploads
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 10

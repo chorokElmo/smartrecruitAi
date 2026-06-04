@@ -1,0 +1,30 @@
+INFO:     Started server process [28384]
+INFO:     Waiting for application startup.
+2026-06-03 23:39:32 | app.ai.embedder              | INFO     | Loading sentence-transformers model 'all-MiniLM-L6-v2' ...
+2026-06-03 23:41:51 | sentence_transformers.SentenceTransformer | INFO     | Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-06-03 23:41:58 | sentence_transformers.SentenceTransformer | INFO     | Use pytorch device_name: cpu
+2026-06-03 23:41:58 | app.ai.embedder              | INFO     | Model 'all-MiniLM-L6-v2' loaded — embedding dim=384
+2026-06-03 23:41:58 | app.ai.embedder              | INFO     | Embedder ready
+2026-06-03 23:41:58 | scraper.scheduler            | INFO     | Loaded 4 historical scraper logs
+2026-06-03 23:41:58 | apscheduler.scheduler        | INFO     | Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-06-03 23:41:58 | apscheduler.scheduler        | INFO     | Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-06-03 23:41:58 | apscheduler.scheduler        | INFO     | Added job "Scrape all job sources" to job store "default"
+2026-06-03 23:41:58 | apscheduler.scheduler        | INFO     | Added job "Deactivate expired job listings" to job store "default"
+2026-06-03 23:41:58 | apscheduler.scheduler        | INFO     | Scheduler started
+2026-06-03 23:41:58 | scraper.scheduler            | INFO     | Scheduler started — scraping every 6 hours, freshness check every hour
+2026-06-03 23:42:00 | app.startup                  | INFO     | [Auto-populate] 12 active jobs found (< 50) — scheduling one-time Rekrute scrape (3 pages)…
+2026-06-03 23:42:00 | apscheduler.scheduler        | INFO     | Added job "Startup Rekrute quick-scrape (3 pages)" to job store "default"
+2026-06-03 23:42:00 | scraper.scheduler            | INFO     | [Startup] One-time Rekrute scrape (3 pages) scheduled — will run in background
+INFO:     Application startup complete.
+2026-06-03 23:42:00 | apscheduler.executors.default | INFO     | Running job "Startup Rekrute quick-scrape (3 pages) (trigger: date[2026-06-03 23:42:00 CEST], next run at: 2026-06-03 23:42:00 CEST)" (scheduled at 2026-06-03 23:42:00.436825+02:00)
+2026-06-03 23:42:00 | apscheduler.scheduler        | INFO     | Removed job startup_scrape
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-06-03 23:42:00 | scraper.Rekrute              | INFO     | [Rekrute] \u2500\u2500 Starting scrape run \u2500\u2500
+2026-06-03 23:42:01 | httpx                        | INFO     | HTTP Request: GET https://www.rekrute.com/offres.html?s=1&p=1&o=1 "HTTP/1.1 200 OK"
+2026-06-03 23:42:01 | scraper.Rekrute              | INFO     | Page 1: found 10 job cards
+2026-06-03 23:42:01 | scraper.Rekrute              | INFO     | Total raw jobs from Rekrute: 10
+2026-06-03 23:42:01 | scraper.Rekrute              | INFO     | [Rekrute] Fetched 10 raw jobs
+2026-06-03 23:42:01 | scraper.Rekrute              | INFO     | [Rekrute] Parsed 0 valid jobs
+2026-06-03 23:42:02 | scraper.Rekrute              | INFO     | [Rekrute] \u2500\u2500 Run complete \u2500\u2500 found=10 | added=0 | skipped=0 | errors=0 | duration=1.6s
+2026-06-03 23:42:02 | scraper.scheduler            | INFO     | [Startup] Rekrute quick-scrape done — added=0 skipped=0
+2026-06-03 23:42:02 | apscheduler.executors.default | INFO     | Job "Startup Rekrute quick-scrape (3 pages) (trigger: date[2026-06-03 23:42:00 CEST], next run at: 2026-06-03 23:42:00 CEST)" executed successfully

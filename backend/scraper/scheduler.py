@@ -171,14 +171,14 @@ def run_scraper_by_name(name: str) -> Optional[dict]:
     from scraper.remoteok_scraper        import RemoteOkScraper
     from scraper.rekrute_scraper         import RekruteScraper
     from scraper.emploi_scraper          import EmploiScraper
-    from scraper.indeed_scraper          import IndeedScraper
+    from scraper.tanmia_scraper          import TanmiaScraper
     from scraper.emploi_public_scraper   import EmploiPublicScraper
 
     REGISTRY = {
         "remoteok":         RemoteOkScraper,
         "rekrute":          RekruteScraper,
         "emploi.ma":        EmploiScraper,
-        "indeed":           IndeedScraper,
+        "tanmia.ma":        TanmiaScraper,
         "emploi-public.ma": EmploiPublicScraper,
     }
 
@@ -202,10 +202,10 @@ def run_all_scrapers() -> list[dict]:
     from scraper.remoteok_scraper      import RemoteOkScraper
     from scraper.rekrute_scraper       import RekruteScraper
     from scraper.emploi_scraper        import EmploiScraper
-    from scraper.indeed_scraper        import IndeedScraper
+    from scraper.tanmia_scraper        import TanmiaScraper
     from scraper.emploi_public_scraper import EmploiPublicScraper
 
-    SCRAPERS = [RemoteOkScraper, RekruteScraper, EmploiScraper, IndeedScraper, EmploiPublicScraper]
+    SCRAPERS = [RemoteOkScraper, RekruteScraper, EmploiScraper, TanmiaScraper, EmploiPublicScraper]
 
     logger.info("═══ Starting scheduled scrape run — all sources ═══")
     results = [_run_scraper(cls) for cls in SCRAPERS]

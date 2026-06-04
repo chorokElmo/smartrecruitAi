@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store/authStore";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 
 interface Notification {
   id: string;
