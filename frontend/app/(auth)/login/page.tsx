@@ -26,8 +26,11 @@ export default function LoginPage() {
       const { data: user } = await authApi.me();
       setAuth(user, tokenData.access_token);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? "Invalid email or password");
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Invalid email or password"
+      );
     } finally {
       setLoading(false);
     }

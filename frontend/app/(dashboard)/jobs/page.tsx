@@ -10,20 +10,25 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Building2, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Search, MapPin, Building2, ChevronLeft, ChevronRight, Filter, Globe, Lock } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const CONTRACT_TYPES = ["All", "CDI", "CDD", "Stage", "Freelance"];
+const SECTORS = [
+  { value: "all",     label: "All sectors" },
+  { value: "private", label: "Privé",  icon: Globe },
+  { value: "public",  label: "Public", icon: Lock  },
+];
 
 function JobCard({ job, score, index }: { job: Job; score?: number; index: number }) {
   return (
     <motion.div variants={itemVariants} transition={{ delay: index * 0.04 }}>
       <Link href={`/jobs/${job.id}`} className="block group h-full">
         <div className="card-base card-hover h-full flex flex-col p-4 gap-3">
+
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              {/* Company avatar */}
               <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
                 {job.company[0]?.toUpperCase()}
               </div>
@@ -36,7 +41,6 @@ function JobCard({ job, score, index }: { job: Job; score?: number; index: numbe
                 </p>
               </div>
             </div>
-            {/* Score ring */}
             {score !== undefined && <ScoreRing score={score} size={42} strokeWidth={3.5} />}
           </div>
 
@@ -50,6 +54,11 @@ function JobCard({ job, score, index }: { job: Job; score?: number; index: numbe
             {job.contract_type && (
               <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
                 {job.contract_type}
+              </span>
+            )}
+            {job.sector === "public" && (
+              <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                <Lock className="w-2.5 h-2.5" />Public
               </span>
             )}
             {job.source_name && (
@@ -84,15 +93,16 @@ function JobCard({ job, score, index }: { job: Job; score?: number; index: numbe
 }
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [recs, setRecs] = useState<Recommendation[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
-  const [search, setSearch] = useState("");
-  const [location, setLocation] = useState("");
+  const [jobs, setJobs]             = useState<Job[]>([]);
+  const [recs, setRecs]             = useState<Recommendation[]>([]);
+  const [total, setTotal]           = useState(0);
+  const [page, setPage]             = useState(1);
+  const [pages, setPages]           = useState(1);
+  const [search, setSearch]         = useState("");
+  const [location, setLocation]     = useState("");
   const [contractType, setContractType] = useState("All");
-  const [loading, setLoading] = useState(true);
+  const [sector, setSector]         = useState("all");
+  const [loading, setLoading]       = useState(true);
 
   const scoreMap = Object.fromEntries(recs.map((r) => [r.job.id, r.score]));
 
@@ -100,9 +110,11 @@ export default function JobsPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, size: 12 };
-      if (search) params.search = search;
-      if (location) params.location = location;
+      if (search)              params.search        = search;
+      if (location)            params.location      = location;
       if (contractType !== "All") params.contract_type = contractType;
+      if (sector !== "all")    params.sector        = sector;
+
       const { data } = await jobsApi.list(params);
       setJobs(data.items);
       setTotal(data.total);
@@ -110,21 +122,28 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, contractType, search, location]);
+  }, [page, contractType, sector, search, location]);
 
-  useEffect(() => { fetchJobs(); }, [page, contractType]);
-  useEffect(() => { recommendationsApi.getAll().then((r) => setRecs(r.data)).catch(() => {}); }, []);
+  useEffect(() => { fetchJobs(); }, [page, contractType, sector]);
+  useEffect(() => {
+    recommendationsApi.getAll().then((r) => setRecs(r.data)).catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchJobs(); };
+  const changeSector = (v: string) => { setSector(v); setPage(1); };
+
+  /* Smart pagination: show up to 5 pages around current */
+  const pageNumbers = (() => {
+    if (pages <= 5) return Array.from({ length: pages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(page - 2, pages - 4));
+    return Array.from({ length: 5 }, (_, i) => start + i);
+  })();
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
+
       {/* ── Header ───────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h1 className="text-xl font-bold">Browse Jobs</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           {total > 0
@@ -141,6 +160,7 @@ export default function JobsPage() {
         transition={{ delay: 0.08, duration: 0.3 }}
         className="card-base p-3 space-y-3"
       >
+        {/* Search row */}
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -185,6 +205,28 @@ export default function JobsPage() {
               {ct}
             </button>
           ))}
+
+          {/* Sector divider */}
+          <span className="text-border text-xs px-1 self-center">|</span>
+
+          {/* Sector pills */}
+          {SECTORS.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => changeSector(value)}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150 flex items-center gap-1",
+                sector === value
+                  ? value === "public"
+                    ? "bg-violet-600 text-white border-transparent"
+                    : "gradient-bg text-white border-transparent"
+                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground bg-background"
+              )}
+            >
+              {Icon && <Icon className="w-2.5 h-2.5" />}
+              {label}
+            </button>
+          ))}
         </div>
       </motion.div>
 
@@ -194,11 +236,7 @@ export default function JobsPage() {
           {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="card-base py-20 text-center"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-base py-20 text-center">
           <Search className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
           <p className="font-semibold text-foreground">No jobs found</p>
           <p className="text-sm text-muted-foreground mt-1">Try different keywords or remove filters</p>
@@ -232,26 +270,34 @@ export default function JobsPage() {
           >
             <ChevronLeft className="w-3.5 h-3.5" />Previous
           </Button>
+
           <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(pages, 5) }).map((_, i) => {
-              const p = i + 1;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={cn(
-                    "w-8 h-8 rounded-lg text-xs font-medium transition-all",
-                    page === p
-                      ? "gradient-bg text-white"
-                      : "hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  {p}
-                </button>
-              );
-            })}
-            {pages > 5 && <span className="text-muted-foreground text-xs px-1">…</span>}
+            {page > 3 && pages > 5 && (
+              <>
+                <button onClick={() => setPage(1)} className="w-8 h-8 rounded-lg text-xs font-medium hover:bg-muted text-muted-foreground">1</button>
+                <span className="text-muted-foreground text-xs px-1">…</span>
+              </>
+            )}
+            {pageNumbers.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={cn(
+                  "w-8 h-8 rounded-lg text-xs font-medium transition-all",
+                  page === p ? "gradient-bg text-white" : "hover:bg-muted text-muted-foreground"
+                )}
+              >
+                {p}
+              </button>
+            ))}
+            {page < pages - 2 && pages > 5 && (
+              <>
+                <span className="text-muted-foreground text-xs px-1">…</span>
+                <button onClick={() => setPage(pages)} className="w-8 h-8 rounded-lg text-xs font-medium hover:bg-muted text-muted-foreground">{pages}</button>
+              </>
+            )}
           </div>
+
           <Button
             variant="outline" size="sm"
             disabled={page === pages}

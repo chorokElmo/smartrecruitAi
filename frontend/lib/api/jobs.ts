@@ -1,4 +1,3 @@
-// Jobs API calls — implemented in Phase 4
 import { apiClient } from "./client";
 
 export const jobsApi = {
@@ -7,9 +6,10 @@ export const jobsApi = {
 
   getById: (id: string) => apiClient.get(`/jobs/${id}`),
 
-  save: (id: string) => apiClient.post(`/jobs/${id}/save`),
-
+  save:   (id: string) => apiClient.post(`/jobs/${id}/save`),
   unsave: (id: string) => apiClient.delete(`/jobs/${id}/save`),
 
   getSaved: () => apiClient.get("/jobs/saved"),
+
+  coverLetter: (id: string) => apiClient.post(`/jobs/${id}/cover-letter`),
 };

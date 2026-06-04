@@ -102,9 +102,9 @@ export default function ProfilePage() {
       } else {
         addToast("✏️ Profile saved successfully!");
       }
-    } catch (e: unknown) {
+    } catch (err: unknown) {
       const msg =
-        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
         "Failed to save profile.";
       addToast(msg, "error");
     } finally {

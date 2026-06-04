@@ -7,28 +7,35 @@ import { Button } from "@/components/ui/button";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import {
   Upload, FileText, CheckCircle2, AlertCircle,
-  Loader2, RefreshCw, Sparkles, ArrowRight, CloudUpload,
+  Loader2, RefreshCw, Sparkles, ArrowRight,
+  CloudUpload, GraduationCap, Briefcase, Clock,
 } from "lucide-react";
 import Link from "next/link";
 
 type UploadState = "idle" | "uploading" | "success" | "error";
 
+interface CVResult {
+  extracted_skills:  string[];
+  diploma?:          string;
+  domain?:           string;
+  years_experience?: string;
+}
+
 const steps = [
-  { id: 1, label: "Upload", icon: Upload },
-  { id: 2, label: "Analyze", icon: Sparkles },
-  { id: 3, label: "Match", icon: RefreshCw },
+  { id: 1, label: "Upload",  icon: Upload    },
+  { id: 2, label: "Analyze", icon: Sparkles  },
+  { id: 3, label: "Match",   icon: RefreshCw },
 ];
 
 export default function CVPage() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [state, setState] = useState<UploadState>("idle");
-  const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
-  const [fileName, setFileName] = useState("");
-  const [error, setError] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [matchCount, setMatchCount] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const inputRef                            = useRef<HTMLInputElement>(null);
+  const [state, setState]                   = useState<UploadState>("idle");
+  const [result, setResult]                 = useState<CVResult | null>(null);
+  const [fileName, setFileName]             = useState("");
+  const [error, setError]                   = useState("");
+  const [generating, setGenerating]         = useState(false);
+  const [matchCount, setMatchCount]         = useState<number | null>(null);
+  const [dragOver, setDragOver]             = useState(false);
 
   const handleFile = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
@@ -43,17 +50,24 @@ export default function CVPage() {
     }
     setFileName(file.name);
     setState("uploading");
-    setCurrentStep(2);
     setError("");
+    setResult(null);
+    setMatchCount(null);
     try {
       const { data } = await cvApi.upload(file);
-      setExtractedSkills(data.extracted_skills ?? []);
+      setResult({
+        extracted_skills:  data.extracted_skills  ?? [],
+        diploma:           data.diploma,
+        domain:            data.domain,
+        years_experience:  data.years_experience,
+      });
       setState("success");
-      setCurrentStep(3);
-    } catch (e: any) {
-      setError(e.response?.data?.detail ?? "Upload failed. Please try again.");
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Upload failed. Please try again.";
+      setError(msg);
       setState("error");
-      setCurrentStep(1);
     }
   };
 
@@ -69,22 +83,27 @@ export default function CVPage() {
     try {
       const { data } = await recommendationsApi.generate();
       setMatchCount(data.length);
-    } catch (e: any) {
-      alert(e.response?.data?.detail ?? "Error generating recommendations.");
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Error generating recommendations.";
+      alert(msg);
     } finally {
       setGenerating(false);
     }
   };
 
   const activeStep = state === "success" ? 3 : state === "uploading" ? 2 : 1;
+  const extractedSkills = result?.extracted_skills ?? [];
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h1 className="text-xl font-bold">Upload CV</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Upload your PDF and let AI extract your skills automatically
+          Upload your PDF and let AI extract your skills, diploma and experience automatically
         </p>
       </motion.div>
 
@@ -96,20 +115,18 @@ export default function CVPage() {
         className="card-base p-4"
       >
         <div className="flex items-center justify-between relative">
-          {/* Connecting line */}
           <div className="absolute left-0 right-0 top-1/2 h-px bg-border -translate-y-1/2 mx-12" />
-
-          {steps.map((step, i) => {
-            const done = activeStep > step.id;
+          {steps.map((step) => {
+            const done   = activeStep > step.id;
             const active = activeStep === step.id;
-            const Icon = step.icon;
+            const Icon   = step.icon;
             return (
               <div key={step.id} className="flex flex-col items-center gap-1.5 relative z-10">
                 <motion.div
                   animate={{
                     scale: active ? 1.1 : 1,
                     backgroundColor:
-                      done ? "#10b981"
+                      done   ? "#10b981"
                       : active ? "hsl(var(--primary))"
                       : "hsl(var(--muted))",
                   }}
@@ -121,7 +138,9 @@ export default function CVPage() {
                     : <Icon className={`w-4 h-4 ${active ? "text-white" : "text-muted-foreground"}`} />
                   }
                 </motion.div>
-                <span className={`text-[10px] font-semibold ${active ? "text-primary" : done ? "text-emerald-600" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] font-semibold ${
+                  active ? "text-primary" : done ? "text-emerald-600" : "text-muted-foreground"
+                }`}>
                   {step.label}
                 </span>
               </div>
@@ -137,10 +156,9 @@ export default function CVPage() {
         transition={{ delay: 0.12, duration: 0.3 }}
         className="card-base overflow-hidden"
       >
-        {/* Color accent top bar */}
         <div className={`h-1 transition-all duration-500 ${
-          state === "success" ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
-          state === "error" ? "bg-gradient-to-r from-red-500 to-rose-400" :
+          state === "success"   ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
+          state === "error"     ? "bg-gradient-to-r from-red-500 to-rose-400" :
           state === "uploading" ? "gradient-bg animate-pulse-slow" :
           "gradient-bg"
         }`} />
@@ -162,14 +180,14 @@ export default function CVPage() {
             animate={{
               scale: dragOver ? 1.01 : 1,
               borderColor:
-                dragOver ? "hsl(var(--primary))" :
+                dragOver         ? "hsl(var(--primary))" :
                 state === "success" ? "#10b981" :
-                state === "error" ? "#ef4444" :
+                state === "error"   ? "#ef4444" :
                 "hsl(var(--border))",
               backgroundColor:
-                dragOver ? "hsl(var(--accent))" :
+                dragOver            ? "hsl(var(--accent))" :
                 state === "success" ? "rgba(16,185,129,0.04)" :
-                state === "error" ? "rgba(239,68,68,0.04)" :
+                state === "error"   ? "rgba(239,68,68,0.04)" :
                 "transparent",
             }}
             transition={{ duration: 0.2 }}
@@ -210,7 +228,7 @@ export default function CVPage() {
                   <div>
                     <p className="font-semibold text-foreground">Analyzing your CV…</p>
                     <p className="text-sm font-medium text-primary mt-1 truncate max-w-xs mx-auto">{fileName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Extracting text and detecting skills</p>
+                    <p className="text-xs text-muted-foreground mt-1">Extracting text, skills, diploma & experience</p>
                   </div>
                 </motion.div>
               )}
@@ -244,11 +262,11 @@ export default function CVPage() {
         </div>
       </motion.div>
 
-      {/* ── Extracted Skills ─────────────────────── */}
+      {/* ── AI Extraction Results ─────────────────── */}
       <AnimatePresence>
         {state === "success" && (
           <motion.div
-            key="skills"
+            key="results"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -259,43 +277,82 @@ export default function CVPage() {
               <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
                 <Sparkles className="w-3 h-3 text-white" />
               </div>
-              <h2 className="text-sm font-semibold">
-                Detected Skills{" "}
-                <span className="font-normal text-muted-foreground">({extractedSkills.length})</span>
-              </h2>
+              <h2 className="text-sm font-semibold">AI Extraction Results</h2>
             </div>
 
             <div className="p-5 space-y-5">
-              {extractedSkills.length > 0 ? (
-                <motion.div
-                  variants={listVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="flex flex-wrap gap-2"
-                >
-                  {extractedSkills.map((s) => (
-                    <motion.span key={s} variants={itemVariants}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium skill-neutral">
-                      {s}
-                    </motion.span>
-                  ))}
-                </motion.div>
-              ) : (
-                <div className="rounded-xl border-2 border-dashed border-border p-6 text-center">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    No skills detected automatically from your CV text.<br />
-                    You can add them manually in your{" "}
-                    <Link href="/profile" className="text-primary underline-offset-2 hover:underline">
-                      Profile
-                    </Link>.
-                  </p>
+
+              {/* ── Enriched metadata ─────────────────── */}
+              {(result?.diploma || result?.domain || result?.years_experience) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {result?.diploma && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-500/8 border border-violet-500/15">
+                      <GraduationCap className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Diploma</p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">{result.diploma}</p>
+                      </div>
+                    </div>
+                  )}
+                  {result?.domain && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-primary/8 border border-primary/15">
+                      <Briefcase className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Domain</p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">{result.domain}</p>
+                      </div>
+                    </div>
+                  )}
+                  {result?.years_experience && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/8 border border-amber-500/15">
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Experience</p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">{result.years_experience} ans</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Divider */}
+              {/* ── Skills ────────────────────────────── */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-2">
+                  Detected Skills ({extractedSkills.length})
+                </p>
+                {extractedSkills.length > 0 ? (
+                  <motion.div
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="flex flex-wrap gap-2"
+                  >
+                    {extractedSkills.map((s) => (
+                      <motion.span
+                        key={s}
+                        variants={itemVariants}
+                        className="px-2.5 py-1 rounded-full text-xs font-medium skill-neutral"
+                      >
+                        {s}
+                      </motion.span>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <div className="rounded-xl border-2 border-dashed border-border p-6 text-center">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      No skills detected automatically from your CV text.<br />
+                      You can add them manually in your{" "}
+                      <Link href="/profile" className="text-primary underline-offset-2 hover:underline">
+                        Profile
+                      </Link>.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-border" />
 
-              {/* Generate button */}
+              {/* ── Run matching ──────────────────────── */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-foreground">Find matching jobs</p>
@@ -316,7 +373,7 @@ export default function CVPage() {
                 </Button>
               </div>
 
-              {/* Success state */}
+              {/* Success banner */}
               <AnimatePresence>
                 {matchCount !== null && (
                   <motion.div
@@ -335,13 +392,18 @@ export default function CVPage() {
                       </p>
                     </div>
                     <Link href="/dashboard">
-                      <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 text-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs gap-1 text-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 shrink-0"
+                      >
                         Dashboard <ArrowRight className="w-3 h-3" />
                       </Button>
                     </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
+
             </div>
           </motion.div>
         )}

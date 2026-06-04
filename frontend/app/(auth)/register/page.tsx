@@ -27,8 +27,11 @@ export default function RegisterPage() {
       const { data: user } = await authApi.me();
       setAuth(user, tokenData.access_token);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? "Registration failed. Please try again.");
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
