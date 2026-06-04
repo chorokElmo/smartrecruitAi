@@ -168,14 +168,13 @@ def run_scraper_by_name(name: str) -> Optional[dict]:
         ScraperResult dict, or None if the name is not recognised.
     """
     # Import here to avoid circular imports at module load time
-    from scraper.remoteok_scraper        import RemoteOkScraper
+    # RemoteOK removed — Morocco-only platform
     from scraper.rekrute_scraper         import RekruteScraper
     from scraper.emploi_scraper          import EmploiScraper
     from scraper.tanmia_scraper          import TanmiaScraper
     from scraper.emploi_public_scraper   import EmploiPublicScraper
 
     REGISTRY = {
-        "remoteok":         RemoteOkScraper,
         "rekrute":          RekruteScraper,
         "emploi.ma":        EmploiScraper,
         "tanmia.ma":        TanmiaScraper,
@@ -199,13 +198,13 @@ def run_all_scrapers() -> list[dict]:
     Returns:
         List of ScraperResult dicts (one per scraper).
     """
-    from scraper.remoteok_scraper      import RemoteOkScraper
+    # RemoteOK removed — Morocco-only platform (Rekrute, Emploi.ma, Tanmia.ma, emploi-public.ma)
     from scraper.rekrute_scraper       import RekruteScraper
     from scraper.emploi_scraper        import EmploiScraper
     from scraper.tanmia_scraper        import TanmiaScraper
     from scraper.emploi_public_scraper import EmploiPublicScraper
 
-    SCRAPERS = [RemoteOkScraper, RekruteScraper, EmploiScraper, TanmiaScraper, EmploiPublicScraper]
+    SCRAPERS = [RekruteScraper, EmploiScraper, TanmiaScraper, EmploiPublicScraper]
 
     logger.info("═══ Starting scheduled scrape run — all sources ═══")
     results = [_run_scraper(cls) for cls in SCRAPERS]
