@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import { jobsApi } from "@/lib/api/jobs";
-import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/authStore";
 import type { Recommendation, Job } from "@/types/job";
 import { ScoreRing } from "@/components/ui/score-ring";
@@ -110,8 +109,7 @@ function RoadmapCard({ hasSkills }: { hasSkills: boolean }) {
   const load = async (force = false) => {
     setLoading(true);
     try {
-      const url = force ? "/recommendations/advice?force=true" : "/recommendations/advice";
-      const { data } = await apiClient.get(url);
+      const { data } = await recommendationsApi.advice(force);
       setContent(data.content);
       setGeneratedAt(data.generated_at);
       setCached(data.cached);

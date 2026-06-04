@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { jobsApi } from "@/lib/api/jobs";
-import { apiClient } from "@/lib/api/client";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import type { Job, Recommendation } from "@/types/job";
 import { ScoreRingLarge } from "@/components/ui/score-ring";
@@ -35,10 +34,15 @@ function CoverLetterModal({
   const [error, setError]       = useState<string>("");
 
   useEffect(() => {
-    apiClient
-      .post(`/jobs/${jobId}/cover-letter`)
+    jobsApi
+      .coverLetter(jobId)
       .then((r) => setLetter(r.data.cover_letter))
-      .catch((e) => setError(e.response?.data?.detail ?? "Failed to generate cover letter."))
+      .catch((e: unknown) => {
+        const msg =
+          (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+          "Failed to generate cover letter.";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, [jobId]);
 
