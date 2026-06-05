@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Optional
+import uuid
 from app.database import get_db
 from app.models.job import Job
+from app.models.application import Application
 from app.schemas.job import JobCreate, JobResponse, JobListResponse
 from app.services.job_service import JobService
 from app.services.saved_job_service import SavedJobService
@@ -81,6 +83,49 @@ def unsave_job(
 def get_job(job_id: str, db: Session = Depends(get_db)):
     """Get a single job by ID."""
     return JobService(db).get_job(job_id)
+
+
+@router.get("/applied", response_model=list[str])
+def get_applied_jobs(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return list of job IDs the current user has marked as applied."""
+    apps = db.query(Application.job_id).filter(
+        Application.user_id == uuid.UUID(user_id)
+    ).all()
+    return [str(row[0]) for row in apps]
+
+
+@router.post("/{job_id}/apply", status_code=201)
+def mark_applied(
+    job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Mark a job as applied. Idempotent — safe to call multiple times."""
+    existing = db.query(Application).filter(
+        Application.user_id == uuid.UUID(user_id),
+        Application.job_id  == uuid.UUID(job_id),
+    ).first()
+    if not existing:
+        db.add(Application(user_id=uuid.UUID(user_id), job_id=uuid.UUID(job_id)))
+        db.commit()
+    return {"applied": True, "job_id": job_id}
+
+
+@router.delete("/{job_id}/apply", status_code=204)
+def unmark_applied(
+    job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Remove the applied mark from a job."""
+    db.query(Application).filter(
+        Application.user_id == uuid.UUID(user_id),
+        Application.job_id  == uuid.UUID(job_id),
+    ).delete()
+    db.commit()
 
 
 @router.post("/{job_id}/cover-letter")

@@ -5,5 +5,6 @@ from .saved_job import SavedJob
 from .recommendation import Recommendation
 from .notification import Notification
 from .roadmap import Roadmap
+from .application import Application
 
-__all__ = ["User", "Job", "CV", "SavedJob", "Recommendation", "Notification", "Roadmap"]
+__all__ = ["User", "Job", "CV", "SavedJob", "Recommendation", "Notification", "Roadmap", "Application"]

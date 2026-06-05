@@ -61,6 +61,7 @@ class Job(Base):
     saved_by        = relationship("SavedJob",      back_populates="job", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="job", cascade="all, delete-orphan")
     notifications   = relationship("Notification",   back_populates="job", cascade="all, delete-orphan")
+    applications    = relationship("Application",    back_populates="job", cascade="all, delete-orphan")
 
     # ── Composite indexes for common query patterns ────────────
     __table_args__ = (

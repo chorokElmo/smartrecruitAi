@@ -72,8 +72,8 @@ class RekruteScraper(BaseScraper):
     BASE_URL       = "https://www.rekrute.com"
     LISTING_URL    = "https://www.rekrute.com/offres.html"
     REQUEST_DELAY  = 2.0     # polite delay between requests
-    MAX_PAGES      = 10      # scrape up to 10 pages (~200 jobs)
-    JOBS_PER_PAGE  = 20
+    MAX_PAGES      = 15      # scrape up to 15 pages
+    JOBS_PER_PAGE  = 10      # rekrute.com returns ~10 cards per page
 
     # ── CSS selectors (updated June 2026) ─────────────────────
     # Primary card: <li class="post-id" id="{id}">
@@ -109,19 +109,20 @@ class RekruteScraper(BaseScraper):
 
     def fetch_jobs(self) -> list[dict]:
         """
-        Paginate through rekrute.com listing pages.
+        Paginate through rekrute.com listing pages (all sectors, no filter).
         Returns a list of raw dicts, one per job card found.
         """
         all_raw_jobs: list[dict] = []
 
         with self.get_http_client() as client:
             for page in range(1, self.MAX_PAGES + 1):
-                url = f"{self.LISTING_URL}?s=1&p={page}&o=1"
+                # No &s= filter → returns all sectors
+                url = f"{self.LISTING_URL}?p={page}&o=1"
                 self.logger.debug(f"Fetching page {page}: {url}")
 
                 resp = safe_get(url, client, self.logger, self.rate_limiter)
                 if resp is None:
-                    self.logger.warning(f"No response for page {page}, stopping pagination")
+                    self.logger.warning(f"No response for page {page}, stopping")
                     break
 
                 cards = self._extract_cards_from_page(resp.text, base_url=self.BASE_URL)
@@ -133,7 +134,6 @@ class RekruteScraper(BaseScraper):
                 all_raw_jobs.extend(cards)
                 self.logger.info(f"Page {page}: found {len(cards)} job cards")
 
-                # If we got fewer cards than expected, this was the last page
                 if len(cards) < self.JOBS_PER_PAGE:
                     break
 

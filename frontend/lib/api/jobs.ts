@@ -12,4 +12,9 @@ export const jobsApi = {
   getSaved: () => apiClient.get("/jobs/saved"),
 
   coverLetter: (id: string) => apiClient.post(`/jobs/${id}/cover-letter`),
+
+  // Application tracking
+  getApplied:   ()          => apiClient.get("/jobs/applied"),
+  markApplied:  (id: string) => apiClient.post(`/jobs/${id}/apply`),
+  unmarkApplied:(id: string) => apiClient.delete(`/jobs/${id}/apply`),
 };

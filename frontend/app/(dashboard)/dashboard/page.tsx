@@ -347,7 +347,11 @@ export default function DashboardPage() {
               <EmptyState
                 icon={Brain}
                 title="No matches yet"
-                description="Run AI matching after uploading your CV to see personalized job recommendations."
+                description={
+                  (user?.skills?.length ?? 0) === 0
+                    ? "Upload your CV first to extract your skills, then run AI matching."
+                    : 'Click "Run AI Matching" above to score all jobs against your profile.'
+                }
                 action={{ label: "Run AI Matching", onClick: handleGenerate }}
               />
             ) : (

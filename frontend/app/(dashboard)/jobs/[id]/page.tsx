@@ -9,10 +9,10 @@ import { ScoreRingLarge } from "@/components/ui/score-ring";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft, MapPin, Building2, Calendar,
+  ArrowLeft, MapPin, Building2,
   ExternalLink, CheckCircle2, XCircle, Loader2,
   Sparkles, Bookmark, BookmarkCheck, Clock,
-  FileText, Copy, Download, X,
+  FileText, Copy, Download, X, Send,
 } from "lucide-react";
 
 // ── Cover Letter Modal ────────────────────────────────────────────────────────
@@ -199,7 +199,9 @@ export default function JobDetailPage() {
   const [rec, setRec]               = useState<Recommendation | null>(null);
   const [loading, setLoading]       = useState(true);
   const [isSaved, setIsSaved]       = useState(false);
-  const [savePending, setSavePending] = useState(false);
+  const [savePending, setSavePending]     = useState(false);
+  const [isApplied, setIsApplied]         = useState(false);
+  const [applyPending, setApplyPending]   = useState(false);
   const [showCoverLetter, setShowCoverLetter] = useState(false);
 
   useEffect(() => {
@@ -211,6 +213,9 @@ export default function JobDetailPage() {
       jobsApi.getSaved()
         .then((r) => setIsSaved(r.data.some((j: Job) => j.id === id)))
         .catch(() => {}),
+      jobsApi.getApplied()
+        .then((r) => setIsApplied((r.data as string[]).includes(id)))
+        .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [id]);
 
@@ -220,6 +225,14 @@ export default function JobDetailPage() {
       if (isSaved) { await jobsApi.unsave(id); setIsSaved(false); }
       else         { await jobsApi.save(id);   setIsSaved(true);  }
     } catch { /* ignore */ } finally { setSavePending(false); }
+  };
+
+  const handleToggleApply = async () => {
+    setApplyPending(true);
+    try {
+      if (isApplied) { await jobsApi.unmarkApplied(id); setIsApplied(false); }
+      else           { await jobsApi.markApplied(id);   setIsApplied(true);  }
+    } catch { /* ignore */ } finally { setApplyPending(false); }
   };
 
   if (loading) return (
@@ -379,6 +392,27 @@ export default function JobDetailPage() {
                 onClick={() => setShowCoverLetter(true)}
               >
                 <FileText className="w-3.5 h-3.5" />Cover Letter
+              </Button>
+
+              {/* Mark as Applied */}
+              <Button
+                variant="outline"
+                className={`h-9 px-3 text-sm gap-2 transition-all ${
+                  isApplied
+                    ? "text-emerald-600 border-emerald-400/40 bg-emerald-500/5"
+                    : ""
+                }`}
+                onClick={handleToggleApply}
+                disabled={applyPending}
+              >
+                {applyPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : isApplied ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                {isApplied ? "Applied ✓" : "Mark Applied"}
               </Button>
 
               <Button
