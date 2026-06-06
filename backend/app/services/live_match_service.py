@@ -123,27 +123,61 @@ class LiveMatchService:
         logger.info("[LiveMatch] Returning %d scored matches", len(scored))
         return scored
 
-    # ── Step 2: Live scraping ─────────────────────────────────────────────────
+    # ── Step 2: Live scraping with detail page enrichment ────────────────────
 
     def _scrape_live(self, max_pages: int) -> list[dict]:
-        """Scrape Rekrute + Emploi.ma + emploi-public.ma right now."""
+        """
+        Scrape Rekrute + Emploi.ma + emploi-public.ma in real-time.
+
+        For Rekrute: visits each individual job page to extract:
+          - exact diploma requirement (Bac+3, Bac+5, Master…)
+          - experience level (Junior 1-3 ans, Confirmé 3-7 ans…)
+          - application deadline (exact date)
+          - full job description (mission + profile)
+        """
         jobs: list[dict] = []
 
-        # ── Rekrute ──────────────────────────────────────────────────────────
+        # ── Rekrute — with detail page enrichment ────────────────────────────
         try:
             from scraper.rekrute_scraper import RekruteScraper
+            from scraper.utils import get_http_client
 
             class _QuickRekrute(RekruteScraper):
                 MAX_PAGES = max_pages
 
             scraper  = _QuickRekrute(self.db)
             raw_list = scraper.fetch_jobs()
-            for raw in raw_list:
-                parsed = scraper.parse_job(raw)
-                if parsed and parsed.get("title") and parsed.get("company"):
+
+            with get_http_client("Rekrute-detail") as client:
+                for raw in raw_list:
+                    parsed = scraper.parse_job(raw)
+                    if not parsed or not parsed.get("title") or not parsed.get("company"):
+                        continue
+
                     cleaned = scraper.clean_data(parsed)
+                    source_url = cleaned.get("source_url") or ""
+
+                    # ── Visit detail page for rich data ───────────────────────
+                    if source_url:
+                        detail = scraper.fetch_detail_page(source_url, client)
+
+                        # Override with richer data from detail page
+                        if detail.get("required_diploma"):
+                            cleaned["required_diploma"] = detail["required_diploma"]
+                        if detail.get("required_experience"):
+                            cleaned["required_experience"] = detail["required_experience"]
+                        if detail.get("deadline"):
+                            cleaned["deadline"] = detail["deadline"]
+                        if detail.get("full_description") and len(detail["full_description"]) > len(cleaned.get("description", "")):
+                            cleaned["description"] = detail["full_description"]
+                        if detail.get("remote_work") is not None:
+                            cleaned["remote_work"] = detail["remote_work"]
+                        cleaned["soft_skills"] = detail.get("soft_skills", [])
+
                     jobs.append(cleaned)
-            logger.info("[LiveMatch] Rekrute: %d jobs", len(jobs))
+
+            logger.info("[LiveMatch] Rekrute: %d jobs with detail enrichment", len(jobs))
+
         except Exception as exc:
             logger.warning("[LiveMatch] Rekrute scrape failed: %s", exc)
 
@@ -308,11 +342,14 @@ class LiveMatchService:
         user_diploma = profile["diploma"]
         user_exp_str = profile["years_experience"]
 
-        # Diploma seniority map
+        # Diploma seniority map — higher = more qualified
         DIPLOMA_RANK = {
-            "Doctorat": 6, "Master": 5, "Ingénieur": 5, "Bac+5": 5,
-            "Licence Pro": 4, "Licence": 4, "Bac+3": 4,
-            "Bac+2": 3, "DUT": 3, "BTS": 3, "Bac": 2,
+            "Doctorat": 7,
+            "Master": 6, "Ingénieur": 6, "Bac+5": 6,
+            "Licence Pro": 5, "Licence": 5, "Bac+4": 5, "Bac+3": 5,
+            "Bac+2": 4, "DUT": 4, "BTS": 4,
+            "Bac": 3,
+            "non précisé": 3,
         }
 
         def parse_years(s: str) -> float:

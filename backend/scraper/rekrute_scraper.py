@@ -358,3 +358,99 @@ class RekruteScraper(BaseScraper):
                     pass
 
         return None
+
+    def fetch_detail_page(self, url: str, client) -> dict:
+        """
+        Visit the individual job detail page and extract rich structured data.
+
+        Parses the full Rekrute job page to get:
+          - required_diploma  : "Bac+5", "Bac+3", "Master", etc.
+          - required_experience: "Junior (1 à 3 ans)", "Confirmé (3 à 7 ans)", etc.
+          - full_description  : mission + profile sections
+          - deadline          : exact application deadline date
+          - soft_skills       : personality traits listed with checkmarks
+          - category          : job sector (Informatique, Finance, etc.)
+          - remote_work       : True/False
+
+        Returns dict with those keys (all optional — empty string / None if not found).
+        """
+        result = {
+            "required_diploma":    None,
+            "required_experience": None,
+            "full_description":    "",
+            "deadline":            None,
+            "soft_skills":         [],
+            "category":            "",
+            "remote_work":         None,
+        }
+
+        try:
+            self.rate_limiter.wait()
+            resp = safe_get(url, client, self.logger, self.rate_limiter)
+            if resp is None:
+                return result
+
+            soup = BeautifulSoup(resp.text, "lxml")
+            page_text = soup.get_text(" ", strip=True)
+
+            # ── Diploma ──────────────────────────────────────────
+            # "Bac +5 et plus Minimum - Ecole d'ingénieur"
+            bac_m = re.search(r"bac\s*\+\s*(\d)", page_text, re.IGNORECASE)
+            if bac_m:
+                n = bac_m.group(1)
+                result["required_diploma"] = {"5": "Bac+5", "4": "Bac+4", "3": "Bac+3", "2": "Bac+2"}.get(n, f"Bac+{n}")
+            else:
+                for pat, label in [
+                    (r"\bdoctorat\b", "Doctorat"), (r"\bmaster\b", "Master"),
+                    (r"\bing[eé]nieur\b", "Ingénieur"), (r"\blicence\b", "Licence"),
+                    (r"\bbts\b", "BTS"), (r"\bdut\b", "DUT"),
+                ]:
+                    if re.search(pat, page_text, re.IGNORECASE):
+                        result["required_diploma"] = label
+                        break
+
+            # ── Experience ───────────────────────────────────────
+            # "Junior (1 à 3 ans)" / "Confirmé (3 à 7 ans)" / "Senior (+7 ans)"
+            exp_m = re.search(
+                r"(junior|débutant|confirmé|senior|expert)[^\n]{0,60}(\d[\d\s–\-à]+ans)",
+                page_text, re.IGNORECASE
+            )
+            if exp_m:
+                result["required_experience"] = f"{exp_m.group(1).capitalize()} ({exp_m.group(2).strip()})"
+            else:
+                yr = re.search(r"(\d+)\s*à\s*(\d+)\s*ans", page_text, re.IGNORECASE)
+                if yr:
+                    result["required_experience"] = f"{yr.group(1)}-{yr.group(2)} ans"
+
+            # ── Deadline ─────────────────────────────────────────
+            # "Postulez avant le 05/08/2026"
+            dl_m = re.search(r"postulez avant le\s+(\d{2}/\d{2}/\d{4})", page_text, re.IGNORECASE)
+            if dl_m:
+                result["deadline"] = self._parse_french_date(dl_m.group(1))
+
+            # ── Full description ──────────────────────────────────
+            desc_parts = []
+            for selector in [".mission", ".profile", ".description", "#mission", "#profil", ".offre-detail"]:
+                el = soup.select_one(selector)
+                if el:
+                    desc_parts.append(el.get_text(" ", strip=True))
+            if not desc_parts:
+                # Fallback: grab the largest <div> text block
+                divs = sorted(soup.find_all("div"), key=lambda d: len(d.get_text()), reverse=True)
+                for div in divs[:3]:
+                    txt = div.get_text(" ", strip=True)
+                    if len(txt) > 200:
+                        desc_parts.append(txt[:1500])
+                        break
+            result["full_description"] = " | ".join(desc_parts)[:3000]
+
+            # ── Remote work ───────────────────────────────────────
+            if re.search(r"t[eé]l[eé]travail\s*:\s*(oui|yes)", page_text, re.IGNORECASE):
+                result["remote_work"] = True
+            elif re.search(r"t[eé]l[eé]travail\s*:\s*(non|no)", page_text, re.IGNORECASE):
+                result["remote_work"] = False
+
+        except Exception as exc:
+            self.logger.debug("[Detail] Failed to parse %s: %s", url, exc)
+
+        return result

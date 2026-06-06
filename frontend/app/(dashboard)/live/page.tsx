@@ -10,6 +10,7 @@ import {
   Zap, MapPin, Building2, ExternalLink, CheckCircle2,
   XCircle, Loader2, GraduationCap, Clock, Sparkles,
   Globe, Lock, Briefcase, RefreshCw, AlertCircle,
+  Wifi, WifiOff, CalendarX,
 } from "lucide-react";
 
 // ── Score badge ───────────────────────────────────────────────────────────────
@@ -106,23 +107,46 @@ function LiveJobCard({ match, index }: { match: LiveMatch; index: number }) {
           ))}
         </div>
 
-        {/* Requirements badges */}
-        {(match.required_diploma || match.required_experience) && (
-          <div className="flex flex-wrap gap-2">
-            {match.required_diploma && (
-              <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                <GraduationCap className="w-2.5 h-2.5" />
-                Requis: {match.required_diploma}
+        {/* Requirements + deadline + remote badges */}
+        <div className="flex flex-wrap gap-2">
+          {match.required_diploma && (
+            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium">
+              <GraduationCap className="w-2.5 h-2.5" />
+              Requis: {match.required_diploma}
+            </span>
+          )}
+          {match.required_experience && (
+            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+              <Clock className="w-2.5 h-2.5" />
+              {match.required_experience}
+            </span>
+          )}
+          {match.deadline && (() => {
+            const dl   = new Date(match.deadline);
+            const days = Math.ceil((dl.getTime() - Date.now()) / 86400000);
+            const fmt  = dl.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+            return (
+              <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                days <= 7
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              }`}>
+                <CalendarX className="w-2.5 h-2.5" />
+                {days <= 7 ? "⚡ " : ""}Clôture: {fmt} · {days}j restants
               </span>
-            )}
-            {match.required_experience && (
-              <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Clock className="w-2.5 h-2.5" />
-                {match.required_experience} ans requis
-              </span>
-            )}
-          </div>
-        )}
+            );
+          })()}
+          {match.remote_work === true && (
+            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+              <Wifi className="w-2.5 h-2.5" />Télétravail ✓
+            </span>
+          )}
+          {match.remote_work === false && (
+            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+              <WifiOff className="w-2.5 h-2.5" />Présentiel
+            </span>
+          )}
+        </div>
 
         {/* Description toggle */}
         <div>
@@ -167,11 +191,11 @@ function LiveJobCard({ match, index }: { match: LiveMatch; index: number }) {
 // ── Loading steps ─────────────────────────────────────────────────────────────
 
 const LOADING_STEPS = [
-  { label: "Connexion à Rekrute.ma…",            icon: Globe   },
-  { label: "Connexion à Emploi.ma…",             icon: Globe   },
-  { label: "Connexion à emploi-public.ma…",      icon: Globe   },
-  { label: "Analyse IA des offres avec Groq…",   icon: Sparkles},
-  { label: "Calcul des scores de correspondance…", icon: Zap   },
+  { label: "Scraping Rekrute.ma…",                  icon: Globe    },
+  { label: "Lecture des pages détail (diplôme, exp, deadline)…", icon: Briefcase },
+  { label: "Scraping Emploi.ma + emploi-public.ma…",icon: Globe    },
+  { label: "Groq AI analyse titre · description · niveau · domaine…", icon: Sparkles },
+  { label: "Calcul scores de compatibilité…",       icon: Zap      },
 ];
 
 function LoadingPipeline({ step }: { step: number }) {

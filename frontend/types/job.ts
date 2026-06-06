@@ -40,7 +40,10 @@ export interface LiveMatch {
   source_url:          string;
   sector:              string;
   contract_type?:      string;
-  score:               number;   // 0–100
+  deadline?:           string;    // ISO date — application deadline
+  remote_work?:        boolean;
+  soft_skills?:        string[];
+  score:               number;    // 0–100
   explanation:         string;
   matching_skills:     string[];
   missing_skills:      string[];
