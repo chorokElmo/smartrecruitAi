@@ -8,10 +8,11 @@ import { NotificationBell } from "@/components/layout/NotificationBell";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/jobs": "Browse Jobs",
-  "/saved": "Saved Jobs",
-  "/cv": "My CV",
-  "/profile": "Profile",
+  "/live":      "Live Search",
+  "/jobs":      "Browse Jobs",
+  "/saved":     "Saved Jobs",
+  "/cv":        "My CV",
+  "/profile":   "Profile",
 };
 
 interface TopBarProps {

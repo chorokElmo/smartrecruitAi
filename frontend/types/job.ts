@@ -29,3 +29,21 @@ export interface Recommendation {
   explanation: string;
   generated_at: string;
 }
+
+/** Live match result — comes directly from Moroccan websites, not the DB */
+export interface LiveMatch {
+  title:               string;
+  company:             string;
+  location:            string;
+  description:         string;
+  source_name:         string;
+  source_url:          string;
+  sector:              string;
+  contract_type?:      string;
+  score:               number;   // 0–100
+  explanation:         string;
+  matching_skills:     string[];
+  missing_skills:      string[];
+  required_diploma?:   string;
+  required_experience?:string;
+}

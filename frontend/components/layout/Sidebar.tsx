@@ -10,11 +10,12 @@ import {
 import { useAuthStore } from "@/lib/store/authStore";
 
 const navItems = [
-  { label: "Dashboard",  href: "/dashboard", icon: LayoutDashboard, badge: null },
-  { label: "Jobs",       href: "/jobs",       icon: Briefcase,       badge: null },
-  { label: "Saved",      href: "/saved",      icon: BookmarkCheck,   badge: null },
-  { label: "My CV",      href: "/cv",         icon: FileText,        badge: null },
-  { label: "Profile",    href: "/profile",    icon: User,            badge: null },
+  { label: "Dashboard",   href: "/dashboard", icon: LayoutDashboard, badge: null   },
+  { label: "Live Search", href: "/live",      icon: Zap,             badge: "NEW"  },
+  { label: "Jobs",        href: "/jobs",      icon: Briefcase,       badge: null   },
+  { label: "Saved",       href: "/saved",     icon: BookmarkCheck,   badge: null   },
+  { label: "My CV",       href: "/cv",        icon: FileText,        badge: null   },
+  { label: "Profile",     href: "/profile",   icon: User,            badge: null   },
 ];
 
 interface SidebarProps {
@@ -87,7 +88,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
             Menu
           </p>
 
-          {navItems.map(({ label, href, icon: Icon }) => {
+          {navItems.map(({ label, href, icon: Icon, badge }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
@@ -101,6 +102,11 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
               >
                 <Icon className={cn("w-4 h-4 shrink-0 transition-colors", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
                 <span className="truncate">{label}</span>
+                {badge && !active && (
+                  <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full gradient-bg text-white">
+                    {badge}
+                  </span>
+                )}
                 {active && (
                   <motion.div
                     layoutId="sidebar-active-dot"

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.recommendation import RecommendationResponse
 from app.services.recommendation_service import RecommendationService
+from app.services.live_match_service import LiveMatchService
 from app.services.advice_service import AdviceService
 from app.core.dependencies import get_current_user_id, get_matcher
 from app.ai.semantic_matcher import SemanticMatcher
@@ -32,6 +33,29 @@ def generate_recommendations(
       final = skill×0.60 + title×0.25 + experience×0.15
     """
     return RecommendationService(db, matcher).generate(user_id)
+
+
+@router.post("/live-match")
+def live_match(
+    pages: int = Query(3, ge=1, le=8, description="Rekrute pages to scrape (1 page ≈ 10 jobs)"),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Real-time job matching pipeline — runs every time the user clicks.
+
+    Steps:
+      1. Scrapes LIVE from Rekrute.ma, Emploi.ma, emploi-public.ma right now
+      2. Groq AI reads each job's full content: title, description, diploma,
+         domain, required experience — not just keywords
+      3. Scores each job 0–100 against the user's complete profile
+      4. Returns ranked results sorted by match score
+
+    Results are never from the database — always fresh from the websites.
+    Falls back to sentence-transformer scoring when Groq key is not set.
+    """
+    results = LiveMatchService(db).search(user_id, max_pages=pages)
+    return results
 
 
 @router.get("/advice")
