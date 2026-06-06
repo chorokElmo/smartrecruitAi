@@ -72,8 +72,10 @@ class RekruteScraper(BaseScraper):
     BASE_URL       = "https://www.rekrute.com"
     LISTING_URL    = "https://www.rekrute.com/offres.html"
     REQUEST_DELAY  = 2.0     # polite delay between requests
-    MAX_PAGES      = 15      # scrape up to 15 pages
+    MAX_PAGES      = 20      # scrape up to 20 pages (~200 IT jobs)
     JOBS_PER_PAGE  = 10      # rekrute.com returns ~10 cards per page
+    # s=1 = Informatique / Internet / Télécoms (IT sector only)
+    SECTOR         = 1
 
     # ── CSS selectors (updated June 2026) ─────────────────────
     # Primary card: <li class="post-id" id="{id}">
@@ -116,8 +118,8 @@ class RekruteScraper(BaseScraper):
 
         with self.get_http_client() as client:
             for page in range(1, self.MAX_PAGES + 1):
-                # No &s= filter → returns all sectors
-                url = f"{self.LISTING_URL}?p={page}&o=1"
+                # s=1 = Informatique / Internet / Télécoms
+                url = f"{self.LISTING_URL}?s={self.SECTOR}&p={page}&o=1"
                 self.logger.debug(f"Fetching page {page}: {url}")
 
                 resp = safe_get(url, client, self.logger, self.rate_limiter)

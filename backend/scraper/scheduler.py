@@ -177,7 +177,6 @@ def run_scraper_by_name(name: str) -> Optional[dict]:
     REGISTRY = {
         "rekrute":          RekruteScraper,
         "emploi.ma":        EmploiScraper,
-        "tanmia.ma":        TanmiaScraper,
         "emploi-public.ma": EmploiPublicScraper,
     }
 
@@ -198,13 +197,12 @@ def run_all_scrapers() -> list[dict]:
     Returns:
         List of ScraperResult dicts (one per scraper).
     """
-    # RemoteOK removed — Morocco-only platform (Rekrute, Emploi.ma, Tanmia.ma, emploi-public.ma)
+    # Active Morocco-only scrapers (Tanmia.ma disabled — URL changed to 404)
     from scraper.rekrute_scraper       import RekruteScraper
     from scraper.emploi_scraper        import EmploiScraper
-    from scraper.tanmia_scraper        import TanmiaScraper
     from scraper.emploi_public_scraper import EmploiPublicScraper
 
-    SCRAPERS = [RekruteScraper, EmploiScraper, TanmiaScraper, EmploiPublicScraper]
+    SCRAPERS = [RekruteScraper, EmploiScraper, EmploiPublicScraper]
 
     logger.info("═══ Starting scheduled scrape run — all sources ═══")
     results = [_run_scraper(cls) for cls in SCRAPERS]
