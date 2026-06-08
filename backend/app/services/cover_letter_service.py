@@ -3,7 +3,7 @@ CoverLetterService — generate a personalised cover letter via Groq LLM.
 
 Strategy:
   1. Load candidate profile + target job from DB.
-  2. Try Groq llama3-8b-8192 to compose a professional French letter.
+  2. Try Groq llama-3.1-8b-instant to compose a professional French letter.
   3. Fall back to a high-quality structured template if the API key is
      absent, the API is down, or any other error occurs.
 
@@ -108,7 +108,7 @@ class CoverLetterService:
 
         try:
             response = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": system},
                     {"role": "user",   "content": prompt},

@@ -3,7 +3,7 @@ AdviceService — generate and cache a personalised career roadmap.
 
 Strategy:
   1. Check DB for a cached roadmap generated < 24h ago. Return it if fresh.
-  2. Otherwise call Groq (llama3-8b-8192) with user profile + top missing skills.
+  2. Otherwise call Groq (llama-3.1-8b-instant) with user profile + top missing skills.
   3. Fall back to a structured template if the key is absent or the API fails.
   4. Persist the result in the `roadmaps` table (upsert by user_id).
 
@@ -140,7 +140,7 @@ class AdviceService:
 
         try:
             resp = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": "Tu es un conseiller carrière expert pour le Maroc. Réponds en français."},
                     {"role": "user",   "content": prompt},

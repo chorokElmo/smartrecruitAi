@@ -1,5 +1,5 @@
 """
-LLM-powered extraction using Groq (llama3-8b-8192).
+LLM-powered extraction using Groq (llama-3.1-8b-instant).
 
 Two public functions:
   extract_cv_data(text)          → CVExtraction  (skills, diploma, domain, years_experience)
@@ -43,7 +43,7 @@ def _get_groq_client():
     try:
         from groq import Groq
         _groq_client = Groq(api_key=settings.GROQ_API_KEY)
-        logger.info("[LLM] Groq client initialized (llama3-8b-8192)")
+        logger.info("[LLM] Groq client initialized (llama-3.1-8b-instant)")
     except Exception as exc:
         logger.warning("[LLM] Could not create Groq client: %s", exc)
         _groq_client = None
@@ -100,7 +100,7 @@ class JobExtraction(BaseModel):
 
 # ── Helper: call Groq and parse JSON ─────────────────────────────────────────
 
-def _call_groq(system_prompt: str, user_content: str, model: str = "llama3-8b-8192") -> dict:
+def _call_groq(system_prompt: str, user_content: str, model: str = "llama-3.1-8b-instant") -> dict:
     """
     Call the Groq API and return the parsed JSON dict.
     Raises on any error (caller handles fallback).

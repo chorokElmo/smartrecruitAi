@@ -6,7 +6,7 @@ export const recommendationsApi = {
   generate: () => apiClient.post("/recommendations/generate"),
 
   /** Live scrape + Groq AI match — always fresh from websites */
-  liveMatch: (pages = 3) =>
+  liveMatch: (pages = 6) =>
     apiClient.post("/recommendations/live-match", null, { params: { pages } }),
 
   advice: (force = false) =>
