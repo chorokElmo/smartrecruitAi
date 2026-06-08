@@ -12,7 +12,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import or_, func, Integer, case
+from datetime import timedelta
+from sqlalchemy import or_, and_, func, Integer, case
 from sqlalchemy.orm import Session
 
 from app.models.job import Job
@@ -146,6 +147,27 @@ class JobRepository:
                 Job.expires_at != None,
                 Job.expires_at < now,
                 Job.is_active == True,
+            )
+            .update({"is_active": False}, synchronize_session="fetch")
+        )
+        self.db.commit()
+        return updated
+
+    def deactivate_stale(self) -> int:
+        """
+        Daily cleanup: deactivate jobs whose deadline has passed, OR private
+        jobs older than 30 days. Returns number of jobs deactivated.
+        """
+        now    = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=30)
+        updated = (
+            self.db.query(Job)
+            .filter(
+                Job.is_active == True,
+                or_(
+                    and_(Job.deadline != None, Job.deadline < now),
+                    and_(Job.created_at < cutoff, Job.sector == "private"),
+                ),
             )
             .update({"is_active": False}, synchronize_session="fetch")
         )

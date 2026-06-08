@@ -2,12 +2,20 @@
 Application model — tracks which jobs a user has marked as "Applied".
 One record per (user, job) pair.
 """
+import enum
 import uuid
-from sqlalchemy import Column, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+
+
+class ApplicationStatus(str, enum.Enum):
+    applied  = "applied"
+    pending  = "pending"
+    rejected = "rejected"
+    accepted = "accepted"
 
 
 class Application(Base):
@@ -16,7 +24,13 @@ class Application(Base):
     id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     job_id     = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"),  nullable=False, index=True)
-    applied_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    status     = Column(
+        SAEnum(ApplicationStatus, name="application_status_enum",
+               values_callable=lambda obj: [e.value for e in obj]),
+        default=ApplicationStatus.applied,
+        nullable=False,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_application_user_job"),)
 

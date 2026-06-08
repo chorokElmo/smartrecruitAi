@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { jobsApi } from "@/lib/api/jobs";
+import { jobsApi, applicationsApi } from "@/lib/api/jobs";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import type { Job, Recommendation } from "@/types/job";
 import { ScoreRing } from "@/components/ui/score-ring";
@@ -20,7 +20,60 @@ const SECTORS = [
   { value: "public",  label: "Public", icon: Lock  },
 ];
 
-function JobCard({ job, score, index }: { job: Job; score?: number; index: number }) {
+const STATUS_OPTIONS = ["applied", "pending", "rejected", "accepted"] as const;
+const STATUS_LABEL: Record<string, string> = {
+  applied: "📨 Postulé", pending: "⏳ En attente", rejected: "❌ Refusé", accepted: "✅ Accepté",
+};
+const STATUS_COLOR: Record<string, string> = {
+  applied:  "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  pending:  "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  rejected: "bg-red-500/10 text-red-600 border-red-500/30",
+  accepted: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+};
+
+type AppInfo = { application_id: string; status: string };
+
+function ApplyControl({
+  job, appInfo, onApply, onStatus,
+}: {
+  job: Job;
+  appInfo?: AppInfo;
+  onApply: (jobId: string) => void;
+  onStatus: (appId: string, jobId: string, status: string) => void;
+}) {
+  if (!appInfo) {
+    return (
+      <button
+        onClick={(e) => { e.preventDefault(); onApply(job.id); }}
+        className="w-full text-xs font-medium px-3 py-1.5 rounded-lg gradient-bg text-white"
+        style={{ boxShadow: "var(--shadow-primary)" }}
+      >
+        📨 Postuler
+      </button>
+    );
+  }
+  return (
+    <select
+      value={appInfo.status}
+      onClick={(e) => e.preventDefault()}
+      onChange={(e) => { e.preventDefault(); onStatus(appInfo.application_id, job.id, e.target.value); }}
+      className={cn("w-full text-xs font-medium px-2 py-1.5 rounded-lg border cursor-pointer", STATUS_COLOR[appInfo.status])}
+    >
+      {STATUS_OPTIONS.map((s) => (
+        <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+      ))}
+    </select>
+  );
+}
+
+function JobCard({
+  job, score, index, appInfo, onApply, onStatus,
+}: {
+  job: Job; score?: number; index: number;
+  appInfo?: AppInfo;
+  onApply: (jobId: string) => void;
+  onStatus: (appId: string, jobId: string, status: string) => void;
+}) {
   return (
     <motion.div variants={itemVariants} transition={{ delay: index * 0.04 }}>
       <Link href={`/jobs/${job.id}`} className="block group h-full">
@@ -86,6 +139,10 @@ function JobCard({ job, score, index }: { job: Job; score?: number; index: numbe
               )}
             </div>
           )}
+
+          <div className="pt-2 mt-auto">
+            <ApplyControl job={job} appInfo={appInfo} onApply={onApply} onStatus={onStatus} />
+          </div>
         </div>
       </Link>
     </motion.div>
@@ -103,8 +160,22 @@ export default function JobsPage() {
   const [contractType, setContractType] = useState("All");
   const [sector, setSector]         = useState("all");
   const [loading, setLoading]       = useState(true);
+  const [apps, setApps]             = useState<Record<string, AppInfo>>({});
 
   const scoreMap = Object.fromEntries(recs.map((r) => [r.job.id, r.score]));
+
+  const loadApps = useCallback(() => {
+    jobsApi.getAppliedFull().then((r) => setApps(r.data)).catch(() => {});
+  }, []);
+
+  const handleApply = async (jobId: string) => {
+    await jobsApi.markApplied(jobId);
+    loadApps();
+  };
+  const handleStatus = async (appId: string, jobId: string, status: string) => {
+    setApps((prev) => ({ ...prev, [jobId]: { ...prev[jobId], status } }));
+    await applicationsApi.updateStatus(appId, status);
+  };
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -127,7 +198,8 @@ export default function JobsPage() {
   useEffect(() => { fetchJobs(); }, [page, contractType, sector]);
   useEffect(() => {
     recommendationsApi.getAll().then((r) => setRecs(r.data)).catch(() => {});
-  }, []);
+    loadApps();
+  }, [loadApps]);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchJobs(); };
   const changeSector = (v: string) => { setSector(v); setPage(1); };
@@ -249,7 +321,8 @@ export default function JobsPage() {
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
           {jobs.map((job, i) => (
-            <JobCard key={job.id} job={job} score={scoreMap[job.id]} index={i} />
+            <JobCard key={job.id} job={job} score={scoreMap[job.id]} index={i}
+              appInfo={apps[job.id]} onApply={handleApply} onStatus={handleStatus} />
           ))}
         </motion.div>
       )}

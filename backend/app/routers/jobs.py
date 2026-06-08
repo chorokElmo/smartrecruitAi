@@ -114,6 +114,21 @@ def mark_applied(
     return {"applied": True, "job_id": job_id}
 
 
+@router.get("/applied/full")
+def get_applied_full(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return {job_id: {application_id, status}} for the current user."""
+    apps = db.query(Application).filter(
+        Application.user_id == uuid.UUID(user_id)
+    ).all()
+    return {
+        str(a.job_id): {"application_id": str(a.id), "status": a.status.value}
+        for a in apps
+    }
+
+
 @router.delete("/{job_id}/apply", status_code=204)
 def unmark_applied(
     job_id: str,

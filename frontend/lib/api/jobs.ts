@@ -14,7 +14,13 @@ export const jobsApi = {
   coverLetter: (id: string) => apiClient.post(`/jobs/${id}/cover-letter`),
 
   // Application tracking
-  getApplied:   ()          => apiClient.get("/jobs/applied"),
-  markApplied:  (id: string) => apiClient.post(`/jobs/${id}/apply`),
-  unmarkApplied:(id: string) => apiClient.delete(`/jobs/${id}/apply`),
+  getApplied:     ()          => apiClient.get("/jobs/applied"),
+  getAppliedFull: ()          => apiClient.get("/jobs/applied/full"),
+  markApplied:    (id: string) => apiClient.post(`/jobs/${id}/apply`),
+  unmarkApplied:  (id: string) => apiClient.delete(`/jobs/${id}/apply`),
+};
+
+export const applicationsApi = {
+  list:         ()                              => apiClient.get("/applications"),
+  updateStatus: (id: string, status: string)   => apiClient.patch(`/applications/${id}/status`, { status }),
 };

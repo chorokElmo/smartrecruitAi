@@ -288,6 +288,23 @@ def _send_deadline_notifications() -> None:
         db.close()
 
 
+def cleanup_stale_jobs() -> int:
+    """
+    Daily midnight job: deactivate jobs past deadline or private jobs > 30 days old.
+    """
+    db = SessionLocal()
+    try:
+        from app.repositories.job_repository import JobRepository
+        count = JobRepository(db).deactivate_stale()
+        logger.info(f"[Cleanup] Deactivated {count} stale job(s)")
+        return count
+    except Exception as e:
+        logger.error(f"[Cleanup] Error: {e}", exc_info=True)
+        return 0
+    finally:
+        db.close()
+
+
 def _deactivate_expired_jobs() -> None:
     """
     Hourly job: mark expired job listings as inactive.
@@ -366,8 +383,17 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # Stale cleanup — every day at midnight
+    _scheduler.add_job(
+        cleanup_stale_jobs,
+        trigger=CronTrigger(hour=0, minute=0),
+        id="cleanup_stale",
+        name="Deactivate stale/expired jobs",
+        replace_existing=True,
+    )
+
     _scheduler.start()
-    logger.info("Scheduler started — scraping every 6 hours, freshness check every hour")
+    logger.info("Scheduler started — scraping every 6 hours, freshness check every hour, cleanup at midnight")
 
 
 def _startup_rekrute_scrape() -> None:

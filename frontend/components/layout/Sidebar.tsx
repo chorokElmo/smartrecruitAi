@@ -5,17 +5,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils/cn";
 import {
   LayoutDashboard, Briefcase, User, FileText,
-  BookmarkCheck, LogOut, X, Zap,
+  BookmarkCheck, LogOut, X, Zap, Send,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
 
 const navItems = [
-  { label: "Dashboard",   href: "/dashboard", icon: LayoutDashboard, badge: null   },
-  { label: "Live Search", href: "/live",      icon: Zap,             badge: "NEW"  },
-  { label: "Jobs",        href: "/jobs",      icon: Briefcase,       badge: null   },
-  { label: "Saved",       href: "/saved",     icon: BookmarkCheck,   badge: null   },
-  { label: "My CV",       href: "/cv",        icon: FileText,        badge: null   },
-  { label: "Profile",     href: "/profile",   icon: User,            badge: null   },
+  { label: "Dashboard",       href: "/dashboard",    icon: LayoutDashboard, badge: null   },
+  { label: "Live Search",     href: "/live",         icon: Zap,             badge: "NEW"  },
+  { label: "Jobs",            href: "/jobs",         icon: Briefcase,       badge: null   },
+  { label: "Mes candidatures",href: "/applications", icon: Send,            badge: null   },
+  { label: "Saved",           href: "/saved",        icon: BookmarkCheck,   badge: null   },
+  { label: "My CV",           href: "/cv",           icon: FileText,        badge: null   },
+  { label: "Profile",         href: "/profile",      icon: User,            badge: null   },
 ];
 
 interface SidebarProps {
