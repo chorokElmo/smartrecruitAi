@@ -45,29 +45,29 @@
   }
 
   .dark {
-    /* ── SmartRecruit purple/dark theme (logo palette) ───────── */
-    --background: 0 0% 5%;              /* #0D0D0D */
-    --foreground: 0 0% 98%;
-    --card: 240 30% 14%;               /* #1A1A2E */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 30% 12%;
-    --popover-foreground: 0 0% 98%;
+    /* ── SmartRecruit dark glassmorphism theme ───────── */
+    --background: 240 20% 5%;          /* #0A0A0F */
+    --foreground: 0 0% 100%;
+    --card: 240 20% 8%;                /* solid fallback; .card-base is glass */
+    --card-foreground: 0 0% 100%;
+    --popover: 240 20% 7%;
+    --popover-foreground: 0 0% 100%;
 
     --primary: 252 100% 65%;           /* #6B4EFF */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 24% 18%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 240 22% 16%;
-    --muted-foreground: 240 8% 62%;
+    --secondary: 240 16% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 16% 12%;
+    --muted-foreground: 215 20% 65%;   /* #94A3B8 */
     --accent: 252 60% 22%;
     --accent-foreground: 252 100% 82%;
 
     --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 24% 20%;             /* #2A2A3E */
-    --input: 240 24% 20%;
+    --border: 240 14% 16%;             /* subtle dark hairline */
+    --input: 240 16% 14%;
     --ring: 252 100% 65%;
 
     /* Elevation (dark) */
@@ -94,14 +94,43 @@
 @layer components {
   /* ── Gradient utilities ───────────────────────── */
   .gradient-text {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    background: linear-gradient(135deg, #6B4EFF, #A855F7);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .gradient-bg {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #6B4EFF 0%, #A855F7 100%);
   }
+
+  /* ── Glassmorphism ───────────────────────────── */
+  .glass-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .glass-card:hover { transform: translateY(-2px); border-color: rgba(107,78,255,0.4); }
+
+  /* Primary gradient button */
+  .btn-primary {
+    background: linear-gradient(135deg, #6B4EFF, #A855F7);
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(107,78,255,0.4);
+  }
+
+  /* Fade in on load */
+  .fade-in { animation: fadeIn 0.4s ease-in-out both; }
   .gradient-bg-emerald {
     background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
   }
@@ -111,18 +140,21 @@
 
   /* ── Cards ───────────────────────────────────── */
   .card-base {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: calc(var(--radius) + 2px);
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
     box-shadow: var(--shadow-sm);
   }
+  .card-base:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
   .card-hover {
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   }
   .card-hover:hover {
-    border-color: hsl(var(--primary) / 0.2);
+    border-color: rgba(107,78,255,0.4);
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
   /* Legacy compat */
   .card-glow {
@@ -157,9 +189,10 @@
   /* ── Nav active state (Linear-style) ─────────── */
   .nav-active {
     position: relative;
-    background: hsl(var(--primary) / 0.08);
+    background: rgba(107,78,255,0.15);
     color: hsl(var(--primary));
   }
+  .nav-inactive:hover { background: rgba(107,78,255,0.15) !important; }
   .nav-active::before {
     content: '';
     position: absolute;
@@ -235,6 +268,11 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {

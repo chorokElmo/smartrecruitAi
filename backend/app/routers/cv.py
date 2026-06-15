@@ -9,7 +9,7 @@ from app.core.dependencies import get_current_user_id
 router = APIRouter()
 
 # Allowed MIME types for CV uploads
-_ALLOWED_CONTENT_TYPES = {"application/pdf"}
+_ALLOWED_CONTENT_TYPES = {"application/pdf", "application/octet-stream"}
 
 
 @router.post("/upload", response_model=CVResponse, status_code=201)
@@ -27,14 +27,7 @@ async def upload_cv(
     - Syncs skills to user profile
     """
     if file.content_type not in _ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"Only PDF files are accepted. "
-                f"Received content type: '{file.content_type}'. "
-                "Please upload a file with content type 'application/pdf'."
-            ),
-        )
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     return await CVService(db).upload_and_process(user_id, file)
 
@@ -82,16 +75,101 @@ def generate_cv(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Generate a professional French CV (Claude → PDF) from the user's profile."""
+    """
+    Generate a professional French CV from the user's profile.
+    Groq (llama-3.1-8b-instant) → Markdown → reportlab PDF.
+    NOTE: spec named llama3-8b-8192 but that model is decommissioned on Groq —
+    using the supported llama-3.1-8b-instant instead.
+    """
+    import io, uuid
     from fastapi.responses import StreamingResponse
-    from app.services.cv_generator_service import CvGeneratorService
-    import io
-    pdf = CvGeneratorService(db).generate_pdf(user_id)
+    from app.repositories.user_repository import UserRepository
+
+    user = UserRepository(db).get_by_id(uuid.UUID(user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    name   = f"{user.first_name} {user.last_name}".strip() or "Candidat"
+    skills = ", ".join(user.skills[:20]) if user.skills else "—"
+    prompt = (
+        "Generate a professional CV in French for:\n"
+        f"Name: {name}, Domain: {user.domain or 'Développement logiciel'}, "
+        f"Diploma: {user.diploma or 'Non précisé'},\n"
+        f"Experience: {user.years_experience or '0'} years, Skills: {skills}\n"
+        "Return clean professional CV in Markdown with sections:\n"
+        "Profil, Compétences, Formation, Expérience, Langues.\n"
+        "Make it ATS-friendly for Moroccan job market."
+    )
+
+    # ── Groq call (mandatory; 500 on failure) ────────────────
+    try:
+        from app.ai.llm_extractor import _get_groq_client
+        client = _get_groq_client()
+        if client is None:
+            raise RuntimeError("Groq API key not configured (GROQ_API_KEY)")
+        resp = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3, max_tokens=1200, timeout=30,
+        )
+        markdown = (resp.choices[0].message.content or "").strip()
+        if len(markdown) < 50:
+            raise RuntimeError("Groq returned an empty CV")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"CV generation failed: {exc}")
+
+    pdf = _markdown_to_pdf(markdown, name)
     return StreamingResponse(
         io.BytesIO(pdf),
         media_type="application/pdf",
         headers={"Content-Disposition": 'attachment; filename="cv-smartrecruit.pdf"'},
     )
+
+
+def _markdown_to_pdf(markdown: str, name: str) -> bytes:
+    """Render simple Markdown (headings, bullets, paragraphs) to a PDF via reportlab."""
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
+
+    styles = getSampleStyleSheet()
+    h1 = ParagraphStyle("h1", parent=styles["Heading1"], textColor=HexColor("#6B4EFF"), fontSize=20)
+    h2 = ParagraphStyle("h2", parent=styles["Heading2"], textColor=HexColor("#6B4EFF"), fontSize=13)
+    body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=10.5, leading=15)
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=18 * mm, bottomMargin=18 * mm,
+                            leftMargin=18 * mm, rightMargin=18 * mm, title=f"CV - {name}")
+    flow, bullets = [], []
+
+    def flush_bullets():
+        if bullets:
+            flow.append(ListFlowable([ListItem(Paragraph(b, body)) for b in bullets],
+                                     bulletType="bullet", leftIndent=12))
+            bullets.clear()
+
+    for raw in markdown.splitlines():
+        line = raw.rstrip()
+        if not line.strip():
+            flush_bullets(); flow.append(Spacer(1, 4)); continue
+        if line.startswith("### "):
+            flush_bullets(); flow.append(Paragraph(line[4:], h2))
+        elif line.startswith("## "):
+            flush_bullets(); flow.append(Paragraph(line[3:], h2))
+        elif line.startswith("# "):
+            flush_bullets(); flow.append(Paragraph(line[2:], h1))
+        elif line.lstrip().startswith(("- ", "* ")):
+            bullets.append(line.lstrip()[2:])
+        else:
+            flush_bullets()
+            flow.append(Paragraph(line.replace("**", ""), body))
+    flush_bullets()
+
+    doc.build(flow)
+    return buf.getvalue()
 
 
 @router.get("/latest", response_model=CVResponse)

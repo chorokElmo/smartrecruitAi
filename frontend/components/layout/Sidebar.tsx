@@ -64,7 +64,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
         <div className="flex items-center gap-2.5 px-4 h-16 border-b border-border shrink-0">
           <Link href="/dashboard" className="flex-1 min-w-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="SmartRecruit AI" className="h-9 w-auto" />
+            <img src="/logo-white.png" alt="SmartRecruit AI" className="h-9 w-auto" />
           </Link>
           {onClose && (
             <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-muted transition-colors ml-auto">

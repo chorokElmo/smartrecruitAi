@@ -52,6 +52,13 @@ const config: Config = {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
+        /* ── Design-system literals ───────────────── */
+        surface: "rgba(255,255,255,0.05)",
+        "primary-light": "#A855F7",
+        text: "#FFFFFF",
+        success: "#10B981",
+        danger: "#F43F5E",
+        warning: "#F59E0B",
       },
       borderRadius: {
         lg: "var(--radius)",
