@@ -10,14 +10,16 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Building2, ChevronLeft, ChevronRight, Filter, Globe, Lock } from "lucide-react";
+import { Search, MapPin, Building2, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useFilterStore } from "@/lib/store/filterStore";
+import { useCvStore } from "@/lib/store/cvStore";
+import { CvGate } from "@/components/layout/CvGate";
 
-const CONTRACT_TYPES = ["All", "CDI", "CDD", "Stage", "Freelance"];
 const SECTORS = [
-  { value: "all",     label: "All sectors" },
-  { value: "private", label: "Privé",  icon: Globe },
-  { value: "public",  label: "Public", icon: Lock  },
+  { value: "all",     label: "Toutes sources" },
+  { value: "private", label: "Privé"  },
+  { value: "public",  label: "Public" },
 ];
 
 const STATUS_OPTIONS = ["applied", "pending", "rejected", "accepted"] as const;
@@ -66,6 +68,21 @@ function ApplyControl({
   );
 }
 
+function ScoreBadge({ score }: { score?: number }) {
+  if (score === undefined || score === null) {
+    return (
+      <div className="shrink-0 w-11 h-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-bold" title="Non scoré">—</div>
+    );
+  }
+  const pct = Math.round(score * 100);
+  const color = pct >= 70 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-slate-400";
+  return (
+    <div className={`shrink-0 w-11 h-11 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold shadow-sm`}>
+      {pct}%
+    </div>
+  );
+}
+
 function JobCard({
   job, score, index, appInfo, onApply, onStatus,
 }: {
@@ -74,48 +91,48 @@ function JobCard({
   onApply: (jobId: string) => void;
   onStatus: (appId: string, jobId: string, status: string) => void;
 }) {
+  const unscored = score === undefined || score === null;
   return (
     <motion.div variants={itemVariants} transition={{ delay: index * 0.04 }}>
       <Link href={`/jobs/${job.id}`} className="block group h-full">
-        <div className="card-base card-hover h-full flex flex-col p-4 gap-3">
+        <div className={cn("card-base card-hover h-full flex flex-col p-4 gap-3", unscored && "opacity-75")}>
 
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
-                {job.company[0]?.toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
-                  {job.title}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
-                  <Building2 className="w-3 h-3 shrink-0" />{job.company}
-                </p>
-              </div>
+          {/* Header: title + score badge */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                {job.title}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 truncate">
+                <span className="flex items-center gap-1"><Building2 className="w-3 h-3 shrink-0" />{job.company}</span>
+                {job.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{job.location}</span>}
+              </p>
             </div>
-            {score !== undefined && <ScoreRing score={score} size={42} strokeWidth={3.5} />}
+            <ScoreBadge score={score} />
           </div>
 
-          {/* Meta */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-            {job.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 shrink-0" />{job.location}
+          {/* Tags: domain, experience, contract, public */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {unscored && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">Non scoré</span>
+            )}
+            {job.required_diploma && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                🎓 {job.required_diploma}
+              </span>
+            )}
+            {job.required_experience && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                ⏱ {job.required_experience} ans
               </span>
             )}
             {job.contract_type && (
-              <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
-                {job.contract_type}
-              </span>
+              <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">{job.contract_type}</span>
             )}
             {job.sector === "public" && (
               <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">
                 <Lock className="w-2.5 h-2.5" />Public
               </span>
-            )}
-            {job.source_name && (
-              <span className="text-[10px] opacity-60">{job.source_name}</span>
             )}
           </div>
 
@@ -124,23 +141,27 @@ function JobCard({
             {job.description}
           </p>
 
-          {/* Skills */}
+          {/* Skills (max 3 + more) */}
           {job.required_skills.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/60 mt-auto">
+            <div className="flex flex-wrap gap-1.5">
               {job.required_skills.slice(0, 3).map((s) => (
-                <span key={s} className="px-2 py-0.5 rounded-full skill-neutral text-[10px] font-medium">
-                  {s}
-                </span>
+                <span key={s} className="px-2 py-0.5 rounded-full skill-neutral text-[10px] font-medium">{s}</span>
               ))}
               {job.required_skills.length > 3 && (
                 <span className="px-2 py-0.5 rounded-full skill-muted text-[10px] font-medium">
-                  +{job.required_skills.length - 3}
+                  +{job.required_skills.length - 3} more
                 </span>
               )}
             </div>
           )}
 
-          <div className="pt-2 mt-auto">
+          {/* Footer: source badge + apply */}
+          <div className="pt-2 mt-auto border-t border-border/60 space-y-2">
+            {job.source_name && (
+              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
+                {job.source_name}
+              </span>
+            )}
             <ApplyControl job={job} appInfo={appInfo} onApply={onApply} onStatus={onStatus} />
           </div>
         </div>
@@ -155,12 +176,12 @@ export default function JobsPage() {
   const [total, setTotal]           = useState(0);
   const [page, setPage]             = useState(1);
   const [pages, setPages]           = useState(1);
-  const [search, setSearch]         = useState("");
-  const [location, setLocation]     = useState("");
-  const [contractType, setContractType] = useState("All");
-  const [sector, setSector]         = useState("all");
+  const { search, city, contractType, source, minScore, set: setFilters } = useFilterStore();
   const [loading, setLoading]       = useState(true);
   const [apps, setApps]             = useState<Record<string, AppInfo>>({});
+  const [matchesOnly, setMatchesOnly] = useState(false);
+  const [filterOpts, setFilterOpts] = useState<{ contract_types: string[]; cities: string[] }>({ contract_types: [], cities: [] });
+  const { hasCv, refresh: refreshCv } = useCvStore();
 
   const scoreMap = Object.fromEntries(recs.map((r) => [r.job.id, r.score]));
 
@@ -181,10 +202,10 @@ export default function JobsPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, size: 12 };
-      if (search)              params.search        = search;
-      if (location)            params.location      = location;
+      if (search)                 params.search        = search;
+      if (city)                   params.city          = city;
       if (contractType !== "All") params.contract_type = contractType;
-      if (sector !== "all")    params.sector        = sector;
+      if (source !== "all")       params.source        = source;
 
       const { data } = await jobsApi.list(params);
       setJobs(data.items);
@@ -193,16 +214,31 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, contractType, sector, search, location]);
+  }, [page, contractType, source, search, city]);
 
-  useEffect(() => { fetchJobs(); }, [page, contractType, sector]);
+  useEffect(() => { refreshCv(); }, [refreshCv]);
+  useEffect(() => { if (hasCv === true) fetchJobs(); }, [hasCv, page, contractType, source, city, search]);
   useEffect(() => {
-    recommendationsApi.getAll().then((r) => setRecs(r.data)).catch(() => {});
+    if (hasCv !== true) return;
+    jobsApi.filters().then((r) => setFilterOpts(r.data)).catch(() => {});
     loadApps();
-  }, [loadApps]);
+    recommendationsApi.getAll(0).then(async ({ data }) => {
+      const newest = data.reduce((m: number, r: Recommendation) =>
+        Math.max(m, r.generated_at ? new Date(r.generated_at).getTime() : 0), 0);
+      const stale = data.length === 0 || (Date.now() - newest) > 24 * 60 * 60 * 1000;
+      if (stale) {
+        try {
+          await recommendationsApi.generate();
+          const fresh = await recommendationsApi.getAll(0);
+          setRecs(fresh.data);
+          return;
+        } catch { /* no skills yet — keep what we have */ }
+      }
+      setRecs(data);
+    }).catch(() => {});
+  }, [loadApps, hasCv]);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchJobs(); };
-  const changeSector = (v: string) => { setSector(v); setPage(1); };
 
   /* Smart pagination: show up to 5 pages around current */
   const pageNumbers = (() => {
@@ -211,18 +247,35 @@ export default function JobsPage() {
     return Array.from({ length: 5 }, (_, i) => start + i);
   })();
 
+  if (hasCv === false) return <CvGate variant="jobs" />;
+
   return (
     <div className="max-w-6xl mx-auto space-y-5">
 
       {/* ── Header ───────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="text-xl font-bold">Browse Jobs</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {total > 0
-            ? <><strong className="text-foreground font-semibold">{total}</strong> opportunities found</>
-            : "Find your next opportunity"
-          }
-        </p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold">Browse Jobs</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {total > 0
+              ? <><strong className="text-foreground font-semibold">{total}</strong> opportunities found</>
+              : "Find your next opportunity"
+            }
+          </p>
+        </div>
+        <button
+          onClick={() => setMatchesOnly((v) => !v)}
+          className={cn(
+            "shrink-0 text-sm font-medium px-4 h-9 rounded-lg border transition-all",
+            matchesOnly
+              ? "gradient-bg text-white border-transparent"
+              : "border-border text-muted-foreground hover:text-foreground bg-background"
+          )}
+          style={matchesOnly ? { boxShadow: "var(--shadow-primary)" } : undefined}
+        >
+          🎯 Mes matches {matchesOnly ? "ON" : "OFF"}
+        </button>
       </motion.div>
 
       {/* ── Filters ──────────────────────────────── */}
@@ -232,73 +285,64 @@ export default function JobsPage() {
         transition={{ delay: 0.08, duration: 0.3 }}
         className="card-base p-3 space-y-3"
       >
-        {/* Search row */}
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
+        {/* Search + dropdown row */}
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
               className="pl-9 h-9 text-sm"
-              placeholder="Search jobs, companies, skills…"
+              placeholder="Rechercher…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setFilters({ search: e.target.value }); setPage(1); }}
             />
           </div>
-          <div className="relative w-full sm:w-36">
+
+          {/* Ville */}
+          <div className="relative w-full sm:w-40">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              className="pl-9 h-9 text-sm"
-              placeholder="Location…"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            <select
+              className="pl-9 h-9 text-sm w-full rounded-md border border-input bg-background"
+              value={city}
+              onChange={(e) => { setFilters({ city: e.target.value }); setPage(1); }}
+            >
+              <option value="">Toutes les villes</option>
+              {filterOpts.cities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
-          <Button
-            type="submit"
-            className="gradient-bg text-white border-0 h-9 px-4 text-sm font-medium shrink-0 gap-1.5"
-            style={{ boxShadow: "var(--shadow-primary)" }}
+
+          {/* Type de contrat (dynamic) */}
+          <select
+            className="h-9 text-sm w-full sm:w-36 rounded-md border border-input bg-background px-2"
+            value={contractType}
+            onChange={(e) => { setFilters({ contractType: e.target.value }); setPage(1); }}
           >
-            <Filter className="w-3.5 h-3.5" />Search
-          </Button>
+            <option value="All">Tout contrat</option>
+            {filterOpts.contract_types.map((ct) => (
+              <option key={ct} value={ct}>{ct}</option>
+            ))}
+          </select>
+
+          {/* Source */}
+          <select
+            className="h-9 text-sm w-full sm:w-32 rounded-md border border-input bg-background px-2"
+            value={source}
+            onChange={(e) => { setFilters({ source: e.target.value }); setPage(1); }}
+          >
+            {SECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
         </form>
 
-        {/* Contract type pills */}
-        <div className="flex gap-1.5 flex-wrap">
-          {CONTRACT_TYPES.map((ct) => (
-            <button
-              key={ct}
-              onClick={() => { setContractType(ct); setPage(1); }}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
-                contractType === ct
-                  ? "gradient-bg text-white border-transparent"
-                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground bg-background"
-              )}
-            >
-              {ct}
-            </button>
-          ))}
-
-          {/* Sector divider */}
-          <span className="text-border text-xs px-1 self-center">|</span>
-
-          {/* Sector pills */}
-          {SECTORS.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => changeSector(value)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150 flex items-center gap-1",
-                sector === value
-                  ? value === "public"
-                    ? "bg-violet-600 text-white border-transparent"
-                    : "gradient-bg text-white border-transparent"
-                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground bg-background"
-              )}
-            >
-              {Icon && <Icon className="w-2.5 h-2.5" />}
-              {label}
-            </button>
-          ))}
+        {/* Score minimum slider */}
+        <div className="flex items-center gap-3 pt-1">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            Score min : <strong className="text-foreground">{minScore}%</strong>
+          </span>
+          <input
+            type="range" min={0} max={100} step={5}
+            value={minScore}
+            onChange={(e) => setFilters({ minScore: Number(e.target.value) })}
+            className="flex-1 accent-primary cursor-pointer"
+          />
         </div>
       </motion.div>
 
@@ -320,10 +364,18 @@ export default function JobsPage() {
           animate="visible"
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
-          {jobs.map((job, i) => (
-            <JobCard key={job.id} job={job} score={scoreMap[job.id]} index={i}
-              appInfo={apps[job.id]} onApply={handleApply} onStatus={handleStatus} />
-          ))}
+          {jobs
+            .filter((job) => {
+              const sc = scoreMap[job.id];
+              if (matchesOnly && (sc === undefined || sc === null)) return false;
+              if (minScore > 0 && Math.round((sc ?? 0) * 100) < minScore) return false;
+              return true;
+            })
+            .sort((a, b) => (scoreMap[b.id] ?? -1) - (scoreMap[a.id] ?? -1))
+            .map((job, i) => (
+              <JobCard key={job.id} job={job} score={scoreMap[job.id]} index={i}
+                appInfo={apps[job.id]} onApply={handleApply} onStatus={handleStatus} />
+            ))}
         </motion.div>
       )}
 

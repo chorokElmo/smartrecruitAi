@@ -1,8 +1,10 @@
 "use client";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cvApi } from "@/lib/api/cv";
 import { recommendationsApi } from "@/lib/api/recommendations";
+import { useCvStore } from "@/lib/store/cvStore";
 import { Button } from "@/components/ui/button";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import {
@@ -28,7 +30,15 @@ const steps = [
 ];
 
 export default function CVPage() {
+  const router                              = useRouter();
+  const { setHasCv, setHasRecommendations } = useCvStore();
   const inputRef                            = useRef<HTMLInputElement>(null);
+  const [analyzing, setAnalyzing]           = useState(false);
+  const [tab, setTab]                       = useState<"upload" | "generate">("upload");
+  const [genTemplate, setGenTemplate]       = useState("Modern");
+  const [genLoading, setGenLoading]         = useState(false);
+  const [genUrl, setGenUrl]                 = useState<string | null>(null);
+  const [genBlob, setGenBlob]               = useState<Blob | null>(null);
   const [state, setState]                   = useState<UploadState>("idle");
   const [result, setResult]                 = useState<CVResult | null>(null);
   const [fileName, setFileName]             = useState("");
@@ -62,6 +72,15 @@ export default function CVPage() {
         years_experience:  data.years_experience,
       });
       setState("success");
+      setHasCv(true);
+      // Auto-trigger matching, then redirect to dashboard with real matches
+      setAnalyzing(true);
+      try {
+        await recommendationsApi.generate();
+        setHasRecommendations(true);
+      } catch { /* matching will retry on dashboard visit */ }
+      router.push("/dashboard");
+      return;
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
@@ -93,21 +112,129 @@ export default function CVPage() {
     }
   };
 
+  const handleAiGenerate = async () => {
+    setGenLoading(true);
+    setGenUrl(null);
+    try {
+      const { data } = await cvApi.generate();
+      const blob = data as Blob;
+      setGenBlob(blob);
+      setGenUrl(URL.createObjectURL(blob));
+    } catch {
+      setError("Échec de la génération du CV.");
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const downloadGenerated = () => {
+    if (!genUrl) return;
+    const a = document.createElement("a");
+    a.href = genUrl;
+    a.download = "cv-smartrecruit.pdf";
+    a.click();
+  };
+
+  const useGeneratedForMatching = async () => {
+    if (!genBlob) return;
+    const file = new File([genBlob], "cv-smartrecruit.pdf", { type: "application/pdf" });
+    handleFile(file);
+  };
+
   const activeStep = state === "success" ? 3 : state === "uploading" ? 2 : 1;
   const extractedSkills = result?.extracted_skills ?? [];
+
+  if (analyzing) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-lg font-semibold">🔄 Analyse de votre profil en cours...</p>
+        <p className="text-sm text-muted-foreground">Extraction des compétences et calcul de vos meilleurs matches</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="text-xl font-bold">Upload CV</h1>
+        <h1 className="text-xl font-bold">Mon CV</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Upload your PDF and let AI extract your skills, diploma and experience automatically
+          Uploadez votre CV ou générez-en un avec l'IA
         </p>
       </motion.div>
 
+      {/* ── Tabs ──────────────────────────────────── */}
+      <div className="flex gap-1 p-1 bg-muted rounded-xl">
+        {([["upload","📤 Uploader"],["generate","✨ Générer un CV"]] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              tab === id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Generate-CV tab ───────────────────────── */}
+      {tab === "generate" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { name: "Modern",       accent: "from-primary to-violet-400" },
+              { name: "Classique",    accent: "from-slate-500 to-slate-300" },
+              { name: "Minimaliste",  accent: "from-zinc-700 to-zinc-400" },
+            ].map((t) => (
+              <button
+                key={t.name}
+                onClick={() => setGenTemplate(t.name)}
+                className={`card-base p-3 text-left transition-all ${
+                  genTemplate === t.name ? "ring-2 ring-primary" : "hover:border-primary/40"
+                }`}
+              >
+                <div className={`h-20 rounded-lg bg-gradient-to-br ${t.accent} mb-2`} />
+                <p className="text-xs font-semibold">{t.name}</p>
+              </button>
+            ))}
+          </div>
+
+          {!genUrl ? (
+            <Button
+              onClick={handleAiGenerate}
+              disabled={genLoading}
+              className="w-full h-11 gradient-bg text-white border-0 gap-2 text-sm font-semibold"
+              style={{ boxShadow: "var(--shadow-primary)" }}
+            >
+              {genLoading
+                ? <><Loader2 className="w-4 h-4 animate-spin" />Claude génère votre CV...</>
+                : <><Sparkles className="w-4 h-4" />Générer avec l'IA</>}
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <iframe src={genUrl} title="CV généré" className="w-full h-[480px] rounded-xl border border-border" />
+              <div className="flex gap-2">
+                <Button onClick={downloadGenerated} className="flex-1 h-10 gradient-bg text-white border-0 gap-2 text-sm"
+                        style={{ boxShadow: "var(--shadow-primary)" }}>
+                  📥 Télécharger en PDF
+                </Button>
+                <Button onClick={useGeneratedForMatching} variant="outline" className="flex-1 h-10 gap-2 text-sm">
+                  📤 Utiliser pour le matching
+                </Button>
+              </div>
+              <button onClick={handleAiGenerate} className="text-xs text-primary hover:underline w-full text-center">
+                ↻ Régénérer
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Progress Steps ────────────────────────── */}
+      {tab === "upload" && (<>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -408,6 +535,7 @@ export default function CVPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>)}
     </div>
   );
 }

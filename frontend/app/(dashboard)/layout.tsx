@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { OnboardingTour } from "@/components/layout/OnboardingTour";
 import { useAuthStore } from "@/lib/store/authStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-background">
+      <OnboardingTour />
       {/* Desktop sidebar — always visible on md+ */}
       <div className="hidden md:flex">
         <Sidebar />

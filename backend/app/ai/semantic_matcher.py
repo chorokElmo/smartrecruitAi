@@ -394,3 +394,85 @@ class SemanticMatcher:
             }
         """
         return calculate_score(user_skills, required_skills)
+
+    def batch_match(self, user_skills: list[str], jobs: list) -> list[dict]:
+        """
+        Score ALL jobs against the user's skills with only 2 encode calls total:
+        one for user skills, one for the pooled set of all jobs' required skills.
+
+        For each job: keyword (exact) matches are computed in pure Python; the
+        remaining unmatched required skills are resolved against the user's
+        unmatched skills via a single shared (R_all × U) cosine matrix.
+        """
+        results: list[dict] = []
+        if not user_skills:
+            for job in jobs:
+                req = job.required_skills or []
+                results.append(_empty(
+                    "No candidate skills found" if req else "No required skills listed",
+                    missing=list(req),
+                ))
+            return results
+
+        # ── Collect every unique normalised required skill across all jobs ────
+        user_norm_map = {_normalize(s).lower(): s for s in user_skills}   # norm → original
+        user_norms    = list(user_norm_map.keys())
+
+        from collections import Counter
+        norm_freq: Counter = Counter()
+        per_job = []   # (job, exact_matching, unmatched_req[(orig,norm)], total)
+        user_lower = {s.lower() for s in user_skills}
+        for job in jobs:
+            req = job.required_skills or []
+            total = len(req)
+            exact, unmatched = [], []
+            for r in req:
+                if r.lower() in user_lower:
+                    exact.append(r)
+                else:
+                    rn = _normalize(r).lower()
+                    unmatched.append((r, rn))
+                    norm_freq[rn] += 1
+            per_job.append((job, exact, unmatched, total))
+
+        # ── Encode: user skills (once) + unique req norms (once) ──────────────
+        # Cap to the most-frequent norms so one batch stays < ~3000 strings → < 10s on CPU.
+        MAX_NORMS = 2800
+        req_norm_list = [n for n, _ in norm_freq.most_common(MAX_NORMS)]
+        sim_lookup: dict[str, tuple[str, float]] = {}   # req_norm → (best user skill, sim)
+        if req_norm_list and user_norms:
+            embeddings = encode(req_norm_list + user_norms, batch_size=256)  # 1 batch call
+            R = len(req_norm_list)
+            req_embs  = embeddings[:R]
+            user_embs = embeddings[R:]
+            sim_matrix = req_embs @ user_embs.T                  # (R, U) one matmul
+            best_idx   = np.argmax(sim_matrix, axis=1)
+            for i, rn in enumerate(req_norm_list):
+                j = int(best_idx[i])
+                sim_lookup[rn] = (user_skills[j], float(np.clip(sim_matrix[i, j], 0.0, 1.0)))
+
+        # ── Assemble per-job results from the shared lookup ───────────────────
+        for job, exact, unmatched, total in per_job:
+            if total == 0:
+                results.append(_empty("No required skills listed"))
+                continue
+            fuzzy, missing = {}, []
+            for orig, rn in unmatched:
+                cand = sim_lookup.get(rn)
+                if cand and cand[1] >= FUZZY_THRESHOLD:
+                    fuzzy[orig] = {"matched_to": cand[0], "similarity": round(cand[1], 4)}
+                else:
+                    missing.append(orig)
+            keyword_score  = round(len(exact) / total, 4)
+            semantic_score = round(sum(v["similarity"] for v in fuzzy.values()) / total, 4)
+            score          = min(1.0, round(keyword_score + semantic_score, 4))
+            results.append({
+                "score":           score,
+                "keyword_score":   keyword_score,
+                "semantic_score":  semantic_score,
+                "matching_skills": sorted(exact),
+                "fuzzy_matches":   fuzzy,
+                "missing_skills":  sorted(missing),
+                "explanation":     _explain(score, keyword_score, semantic_score, exact, fuzzy),
+            })
+        return results

@@ -12,5 +12,7 @@ export const cvApi = {
 
   getLatest: () => apiClient.get("/cv/latest"),
 
+  generate: () => apiClient.post("/cv/generate", null, { responseType: "blob" }),
+
   getSkills: (id: string) => apiClient.get(`/cv/${id}/skills`),
 };

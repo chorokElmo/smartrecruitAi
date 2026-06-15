@@ -6,5 +6,6 @@ from .recommendation import Recommendation
 from .notification import Notification
 from .roadmap import Roadmap
 from .application import Application
+from .score_history import ScoreHistory
 
-__all__ = ["User", "Job", "CV", "SavedJob", "Recommendation", "Notification", "Roadmap", "Application"]
+__all__ = ["User", "Job", "CV", "SavedJob", "Recommendation", "Notification", "Roadmap", "Application", "ScoreHistory"]

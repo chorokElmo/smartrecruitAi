@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+// Same-origin: the browser always hits the frontend host, and Next.js
+// rewrites /api/v1/* to the backend server-side. Works through a single
+// tunnel (no second port, no CORS). Override with NEXT_PUBLIC_API_URL if needed.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 export const apiClient = axios.create({
   baseURL: API_BASE,

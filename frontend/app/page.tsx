@@ -50,11 +50,9 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Briefcase className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">SmartRecruit<span className="gradient-text"> AI</span></span>
+          <div className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="SmartRecruit AI" className="h-10 w-auto" />
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login">
@@ -210,10 +208,8 @@ export default function LandingPage() {
       <footer className="border-t bg-card">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
-              <Briefcase className="w-3 h-3 text-white" />
-            </div>
-            <span className="font-semibold text-foreground">SmartRecruit AI</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="SmartRecruit AI" className="h-7 w-auto" />
             <span>— PFE Project 2026</span>
           </div>
           <p>Built with FastAPI + Next.js 15 + AI Matching</p>

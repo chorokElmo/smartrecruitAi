@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/store/authStore";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -94,6 +95,8 @@ export default function LoginPage() {
           ) : "Sign in"}
         </Button>
       </form>
+
+      <GoogleButton onError={setError} />
 
       {/* Divider */}
       <div className="relative">

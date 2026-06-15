@@ -55,6 +55,8 @@ def _get_groq_client():
 
 class CVExtraction(BaseModel):
     """Structured data extracted from a CV."""
+    name:             Optional[str]  = None
+    email:            Optional[str]  = None
     skills:           list[str]      = []
     diploma:          Optional[str]  = None
     domain:           Optional[str]  = None
@@ -67,7 +69,7 @@ class CVExtraction(BaseModel):
             return []
         return [s.strip() for s in v if isinstance(s, str) and s.strip()]
 
-    @field_validator("diploma", "domain", "years_experience", mode="before")
+    @field_validator("name", "email", "diploma", "domain", "years_experience", mode="before")
     @classmethod
     def clean_str(cls, v):
         if not isinstance(v, str):
@@ -117,11 +119,42 @@ def _call_groq(system_prompt: str, user_content: str, model: str = "llama-3.1-8b
         ],
         temperature=0.0,
         max_tokens=512,
+        timeout=10,
         response_format={"type": "json_object"},
     )
 
     raw = response.choices[0].message.content or "{}"
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        logger.warning("[LLM] invalid JSON from Groq, raw=%s", raw[:300])
+        raise
+
+
+def extract_name_with_groq(text: str) -> str:
+    """Focused Groq call to extract only the candidate's full name. Returns '' if not found."""
+    client = _get_groq_client()
+    if client is None or not text:
+        return ""
+    try:
+        resp = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": (
+                    "From this CV text, extract ONLY the person's full name. "
+                    "Return ONLY the name, nothing else. If not found return \"\".\n"
+                    f"CV: {text[:500]}"
+                ),
+            }],
+            temperature=0.0, max_tokens=20, timeout=10,
+        )
+        name = (resp.choices[0].message.content or "").strip().strip('"')
+        if 1 < len(name.split()) < 6 and not re.search(r"\d|@", name):
+            return name
+    except Exception as exc:
+        logger.warning("[LLM] name extraction failed: %s", exc)
+    return ""
 
 
 # ── CV extraction ─────────────────────────────────────────────────────────────
@@ -129,12 +162,16 @@ def _call_groq(system_prompt: str, user_content: str, model: str = "llama-3.1-8b
 _CV_SYSTEM = """You are a CV parser. Extract structured data from the CV text.
 Return ONLY valid JSON with these exact keys:
 {
+  "name":             "full name of the candidate or null",
+  "email":            "email address or null",
   "skills":           ["list", "of", "technical", "skills"],
   "diploma":          "highest diploma level (Master/Licence/Ingénieur/BTS/DUT/Bac or null)",
   "domain":           "professional domain in French (e.g. Développement web) or null",
   "years_experience": "number as string (e.g. '3' or '5+') or null"
 }
 Rules:
+- name: the candidate's full name as written in the CV.
+- email: the candidate's email address exactly as written.
 - skills: technology names only (Python, React, Docker…). Max 20.
 - diploma: pick from [Doctorat, Master, Ingénieur, Licence Pro, Licence, Bac+5, Bac+3, Bac+2, DUT, BTS, Bac] or null.
 - domain: one of [Développement logiciel, Développement web, Bases de données, DevOps & Cloud,
@@ -143,6 +180,17 @@ Rules:
 - years_experience: total years only, no text. Append '+' if 10 or more.
 - Return null (not empty string) when information is not present.
 """
+
+
+def extract_with_llm(text: str) -> dict | None:
+    """Pure-LLM CV extraction. Returns validated dict, or None on any failure."""
+    if not text or not text.strip():
+        return None
+    try:
+        raw = _call_groq(_CV_SYSTEM, f"CV TEXT:\n{text}")
+        return CVExtraction.model_validate(raw).model_dump()
+    except Exception:
+        return None
 
 
 def extract_cv_data(text: str) -> CVExtraction:
@@ -157,20 +205,29 @@ def extract_cv_data(text: str) -> CVExtraction:
     try:
         raw = _call_groq(_CV_SYSTEM, f"CV TEXT:\n{text}")
         result = CVExtraction.model_validate(raw)
+        if not result.email:
+            from app.ai.skill_extractor import find_email
+            result.email = find_email(text)
+        if not result.name:
+            from app.ai.skill_extractor import find_name_fallback
+            result.name = extract_name_with_groq(text) or find_name_fallback(text)
         logger.info(
-            "[LLM] CV extracted — %d skills, diploma=%s, domain=%s, exp=%s",
-            len(result.skills), result.diploma, result.domain, result.years_experience,
+            "[LLM] CV extracted — name=%s email=%s %d skills, diploma=%s, domain=%s, exp=%s",
+            result.name, result.email, len(result.skills), result.diploma, result.domain, result.years_experience,
         )
         return result
     except Exception as exc:
         logger.debug("[LLM] CV extraction failed, using regex fallback: %s", exc)
 
     # ── Regex fallback ────────────────────────────────────────
-    from app.ai.skill_extractor import extract_skills
+    from app.ai.skill_extractor import extract_skills, extract_contact_info
     from app.ai.cv_enricher import extract_diploma, extract_domain, extract_experience
 
-    skills = extract_skills(text)
+    skills  = extract_skills(text)
+    contact = extract_contact_info(text)
     return CVExtraction(
+        name=contact.get("name"),
+        email=contact.get("email"),
         skills=skills,
         diploma=extract_diploma(text),
         domain=extract_domain(skills) if skills else None,

@@ -48,6 +48,7 @@ class User(Base):
     # ── Auth ──────────────────────────────────────────────────
     hashed_password = Column(String(255), nullable=False)
     is_active       = Column(Boolean, default=True, nullable=False)
+    is_first_login  = Column(Boolean, default=True, nullable=False)
 
     # ── Role ──────────────────────────────────────────────────
     # Stored as a PostgreSQL ENUM type for data integrity
@@ -71,6 +72,7 @@ class User(Base):
     notifications   = relationship("Notification",   back_populates="user", cascade="all, delete-orphan")
     roadmap         = relationship("Roadmap",        back_populates="user", uselist=False, cascade="all, delete-orphan")
     applications    = relationship("Application",    back_populates="user", cascade="all, delete-orphan")
+    score_history   = relationship("ScoreHistory",   back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.id} | {self.email!r} | role={self.role}>"

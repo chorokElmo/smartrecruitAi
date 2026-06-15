@@ -1,18 +1,17 @@
 "use client";
 import { useAuthStore } from "@/lib/store/authStore";
-import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
-import { Sun, Moon, Menu } from "lucide-react";
+import { Menu, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { useOnboardingStore } from "@/lib/store/onboardingStore";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/live":      "Live Search",
-  "/jobs":      "Browse Jobs",
-  "/saved":     "Saved Jobs",
-  "/cv":        "My CV",
-  "/profile":   "Profile",
+  "/dashboard":    "Dashboard",
+  "/jobs":         "Offres d'emploi",
+  "/applications": "Mes candidatures",
+  "/cv":           "Mon CV",
+  "/profile":      "Profil",
 };
 
 interface TopBarProps {
@@ -21,8 +20,8 @@ interface TopBarProps {
 
 export function TopBar({ onMenuToggle }: TopBarProps) {
   const user = useAuthStore((s) => s.user);
-  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const startTour = useOnboardingStore((s) => s.start);
 
   const initials = [user?.first_name?.[0], user?.last_name?.[0]]
     .filter(Boolean).join("").toUpperCase() || "U";
@@ -65,18 +64,16 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
-        {/* Theme toggle */}
+        {/* Relaunch onboarding tour */}
         <Button
           variant="ghost"
           size="icon"
           className="w-8 h-8 rounded-lg"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label="Toggle theme"
+          onClick={startTour}
+          aria-label="Relancer le guide"
+          title="Relancer le guide"
         >
-          {theme === "dark"
-            ? <Sun className="w-4 h-4 text-amber-400" />
-            : <Moon className="w-4 h-4 text-muted-foreground" />
-          }
+          <HelpCircle className="w-4 h-4 text-muted-foreground" />
         </Button>
 
         {/* Notifications — real bell with unread count badge */}

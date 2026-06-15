@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Briefcase, Brain, Target, Zap } from "lucide-react";
+import { GoogleProvider } from "@/components/auth/GoogleProvider";
 
 const highlights = [
   { icon: Brain,  text: "AI extracts your skills from any CV in seconds" },
@@ -9,6 +10,7 @@ const highlights = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
+    <GoogleProvider>
     <div className="min-h-screen flex">
       {/* Left panel — gradient brand side */}
       <div className="hidden lg:flex lg:w-[45%] gradient-bg flex-col justify-between p-12 relative overflow-hidden">
@@ -17,11 +19,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 relative z-10">
-          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-xl text-white">SmartRecruit AI</span>
+        <Link href="/" className="relative z-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-white.png" alt="SmartRecruit AI" className="h-11 w-auto" />
         </Link>
 
         {/* Middle content */}
@@ -55,16 +55,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Right panel — form */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background">
         {/* Mobile logo */}
-        <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-          <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center">
-            <Briefcase className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-lg">SmartRecruit AI</span>
+        <Link href="/" className="mb-8 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="SmartRecruit AI" className="h-20 w-auto" />
         </Link>
         <div className="w-full max-w-md">
           {children}
         </div>
       </div>
     </div>
+    </GoogleProvider>
   );
 }

@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # Groq LLM — optional; falls back to regex if empty
     GROQ_API_KEY: str = ""
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # Anthropic (CV generator)
+    ANTHROPIC_API_KEY: str = ""
+
     # File uploads
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 10

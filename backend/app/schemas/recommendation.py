@@ -10,7 +10,8 @@ class RecommendationResponse(BaseModel):
     score:            float           # final weighted score (0.0–1.0)
     skill_score:      float = 0.0    # two-pass skill component (×0.60)
     title_score:      float = 0.0    # domain-title similarity (×0.25)
-    experience_score: float = 0.5    # experience fit (×0.15)
+    experience_score: float = 0.5    # experience fit (×0.20)
+    diploma_score:    float = 0.7    # diploma fit (×0.15)
     semantic_score:   float = 0.0    # fuzzy sub-score (informational)
     keyword_score:    float = 0.0    # exact sub-score (informational)
     matching_skills:  list[str] = []

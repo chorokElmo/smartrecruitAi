@@ -10,6 +10,36 @@ _TAXONOMY_PATH = Path(__file__).parent / "data" / "skills_taxonomy.json"
 _ALL_SKILLS: list[str] = []
 
 
+def find_email(text: str) -> str | None:
+    if not text:
+        return None
+    m = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    if m:
+        return m.group(0)
+    m = re.search(r"[\w\.-]+\s*@\s*[\w\.-]+\s*\.\s*\w+", text)
+    if m:
+        return re.sub(r"\s+", "", m.group(0))
+    return None
+
+
+def find_name_fallback(text: str) -> str | None:
+    for line in (text or "").splitlines():
+        s = line.strip()
+        if not s or "@" in s:
+            continue
+        if re.search(r"https?://|www\.|linkedin|github|\d", s, re.I):
+            continue
+        words = s.split()
+        if 1 < len(words) < 5 and re.match(r"^[A-Za-zÀ-ÿ' .-]+$", s):
+            return s
+    return None
+
+
+def extract_contact_info(text: str) -> dict:
+    """Regex fallback for name + email from raw CV text."""
+    return {"name": find_name_fallback(text), "email": find_email(text)}
+
+
 def _load_skills() -> list[str]:
     global _ALL_SKILLS
     if _ALL_SKILLS:

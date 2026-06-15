@@ -10,13 +10,11 @@ import {
 import { useAuthStore } from "@/lib/store/authStore";
 
 const navItems = [
-  { label: "Dashboard",       href: "/dashboard",    icon: LayoutDashboard, badge: null   },
-  { label: "Live Search",     href: "/live",         icon: Zap,             badge: "NEW"  },
-  { label: "Jobs",            href: "/jobs",         icon: Briefcase,       badge: null   },
-  { label: "Mes candidatures",href: "/applications", icon: Send,            badge: null   },
-  { label: "Saved",           href: "/saved",        icon: BookmarkCheck,   badge: null   },
-  { label: "My CV",           href: "/cv",           icon: FileText,        badge: null   },
-  { label: "Profile",         href: "/profile",      icon: User,            badge: null   },
+  { label: "Dashboard",       href: "/dashboard",    icon: LayoutDashboard, badge: null },
+  { label: "Jobs",            href: "/jobs",         icon: Briefcase,       badge: null },
+  { label: "Mes candidatures",href: "/applications", icon: Send,            badge: null },
+  { label: "Mon CV",          href: "/cv",           icon: FileText,        badge: null },
+  { label: "Profil",          href: "/profile",      icon: User,            badge: null },
 ];
 
 interface SidebarProps {
@@ -63,19 +61,10 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-4 h-16 border-b border-border shrink-0">
-          <div
-            className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shrink-0"
-            style={{ boxShadow: "var(--shadow-primary)" }}
-          >
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="font-semibold text-sm block leading-none tracking-tight">SmartRecruit</span>
-            <span className="text-[9px] text-muted-foreground font-medium tracking-widest uppercase mt-0.5 block">
-              AI Platform
-            </span>
-          </div>
-          {/* Mobile close */}
+          <Link href="/dashboard" className="flex-1 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="SmartRecruit AI" className="h-9 w-auto" />
+          </Link>
           {onClose && (
             <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-muted transition-colors ml-auto">
               <X className="w-4 h-4 text-muted-foreground" />
@@ -96,6 +85,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
                 key={href}
                 href={href}
                 onClick={onClose}
+                data-tour={href === "/cv" ? "cv" : href === "/jobs" ? "jobs" : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 relative group",
                   active ? "nav-active" : "nav-inactive"

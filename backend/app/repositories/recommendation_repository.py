@@ -29,6 +29,7 @@ class RecommendationRepository:
         skill_score:      float = 0.0,
         title_score:      float = 0.0,
         experience_score: float = 0.5,
+        diploma_score:    float = 0.7,
         explanation:      str   = "",
     ) -> Recommendation:
         existing = (
@@ -43,6 +44,7 @@ class RecommendationRepository:
             existing.skill_score      = skill_score
             existing.title_score      = title_score
             existing.experience_score = experience_score
+            existing.diploma_score    = diploma_score
             existing.matching_skills  = matching
             existing.missing_skills   = missing
             existing.explanation      = explanation
@@ -59,6 +61,7 @@ class RecommendationRepository:
             skill_score      = skill_score,
             title_score      = title_score,
             experience_score = experience_score,
+            diploma_score    = diploma_score,
             matching_skills  = matching,
             missing_skills   = missing,
             explanation      = explanation,

@@ -1,6 +1,7 @@
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 import uuid
+import logging
 
 from app.repositories.cv_repository import CVRepository
 from app.repositories.user_repository import UserRepository
@@ -9,6 +10,8 @@ from app.utils.file_handler import save_upload
 from app.ai.cv_extractor import extract_text_from_pdf
 from app.ai.llm_extractor import extract_cv_data
 from app.core.exceptions import NotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class CVService:
@@ -33,10 +36,17 @@ class CVService:
         except ValueError:
             text = ""
 
+        logger.info("[CV] extracted text length=%d preview=%r", len(text), text[:500])
+
         # 4. Extract structured data — LLM first, regex fallback inside extract_cv_data
         extraction = extract_cv_data(text) if text else None
 
         skills           = extraction.skills           if extraction else []
+        name             = extraction.name             if extraction else None
+        email            = extraction.email            if extraction else None
+        logger.info("[CV] extracted name=%s email=%s", name, email)
+        if not skills:
+            logger.warning("[CV] empty skills — full text:\n%s", text)
         diploma          = extraction.diploma           if extraction else None
         domain           = extraction.domain            if extraction else None
         years_experience = extraction.years_experience  if extraction else None

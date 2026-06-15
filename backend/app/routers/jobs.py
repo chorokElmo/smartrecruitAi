@@ -20,24 +20,28 @@ def list_jobs(
     size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    city: Optional[str] = Query(None, description="Alias for location"),
     contract_type: Optional[str] = Query(None),
     sector: Optional[str] = Query(None, description="Filter by sector: 'private' or 'public'"),
+    source: Optional[str] = Query(None, description="Alias for sector: 'private' or 'public'"),
+    min_score: Optional[int] = Query(None, ge=0, le=100),
     db: Session = Depends(get_db),
 ):
     """
     List jobs with optional filters.
     - **search**: full-text search on title, company, description
-    - **location**: filter by city
+    - **city/location**: filter by city
     - **contract_type**: CDI | CDD | Stage | Freelance
-    - **sector**: private | public (public sector = emploi-public.ma)
+    - **source/sector**: private | public
+    - **min_score**: accepted for API symmetry (per-user score filtering done client-side)
     """
     return JobService(db).list_jobs(
         page=page,
         size=size,
         search=search,
-        location=location,
+        location=city or location,
         contract_type=contract_type,
-        sector=sector,
+        sector=source or sector,
     )
 
 
@@ -46,6 +50,20 @@ def count_jobs(db: Session = Depends(get_db)):
     """Return the total number of active job listings. Used on the frontend dashboard."""
     count = db.query(Job).filter(Job.is_active == True).count()
     return {"count": count}
+
+
+@router.get("/filters")
+def job_filters(db: Session = Depends(get_db)):
+    """Distinct contract types, cities and sources for dynamic filter dropdowns."""
+    active = Job.is_active == True
+    contracts = [r[0] for r in db.query(Job.contract_type).filter(active, Job.contract_type.isnot(None)).distinct().all() if r[0]]
+    cities    = [r[0] for r in db.query(Job.location).filter(active, Job.location.isnot(None)).distinct().all() if r[0] and r[0].strip() and len(r[0]) <= 30]
+    sources   = [r[0] for r in db.query(Job.source_name).filter(active, Job.source_name.isnot(None)).distinct().all() if r[0]]
+    return {
+        "contract_types": sorted(set(contracts)),
+        "cities":         sorted(set(cities))[:50],
+        "sources":        sorted(set(sources)),
+    }
 
 
 # ── Saved jobs ── (must be before /{job_id} to avoid route shadowing)

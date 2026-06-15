@@ -216,6 +216,114 @@ def run_all_scrapers() -> list[dict]:
     return results
 
 
+def _enrich_skills_with_groq(jobs: list[dict]) -> None:
+    """Fill empty required_skills in batches of 10 using Groq."""
+    import json
+    from app.ai.llm_extractor import _get_groq_client
+    client = _get_groq_client()
+    targets = [j for j in jobs if not j.get("required_skills")]
+    if not client or not targets:
+        return
+    for i in range(0, len(targets), 10):
+        batch = targets[i:i + 10]
+        lines = "\n".join(f'{k}: "{j["title"]}"' for k, j in enumerate(batch))
+        prompt = (
+            f"Pour chaque poste, liste 3-6 compétences techniques probables.\n{lines}\n\n"
+            f'Réponds en JSON: {{"r":[{{"i":0,"skills":["Python","SQL"]}}]}}'
+        )
+        try:
+            resp = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0, max_tokens=700,
+                response_format={"type": "json_object"},
+            )
+            data = json.loads(resp.choices[0].message.content or "{}")
+            arr = next((v for v in data.values() if isinstance(v, list)), [])
+            for item in arr:
+                idx = int(item.get("i", -1))
+                if 0 <= idx < len(batch):
+                    batch[idx]["required_skills"] = item.get("skills", []) or []
+        except Exception as e:
+            logger.warning("[Scraper] Groq enrich batch failed: %s", e)
+
+
+def run_site_scrapers(pages: int = 3) -> dict:
+    """Run all 6 site scrapers, dedup by title+company, enrich, persist. Returns counts."""
+    from datetime import datetime as _dt
+    from app.models.job import Job
+    from scraper.sites import rekrute, emploi_ma, dreamjob, onejob, marocannonces, emploi_public
+
+    SITES = {
+        "rekrute": rekrute, "emploi_ma": emploi_ma, "dreamjob": dreamjob,
+        "onejob": onejob, "marocannonces": marocannonces, "emploi_public": emploi_public,
+    }
+    counts = {}
+    all_jobs: list[dict] = []
+    for name, mod in SITES.items():
+        try:
+            found = mod.scrape(pages=pages)
+        except Exception as e:
+            logger.error("[Scraper] %s crashed: %s", name, e)
+            found = []
+        counts[name] = len(found)
+        all_jobs.extend(found)
+
+    _enrich_skills_with_groq(all_jobs)
+
+    db = SessionLocal()
+    skipped = 0
+    try:
+        for j in all_jobs:
+            title = (j.get("title") or "").strip()[:255]
+            company = (j.get("company") or "").strip()[:255]
+            if not title or not company:
+                skipped += 1
+                continue
+            existing = db.query(Job).filter(Job.title == title, Job.company == company).first()
+            deadline = j.get("deadline")
+            sector = "public" if j.get("source") == "emploi_public" else "private"
+            if existing:
+                existing.description     = j.get("description") or existing.description
+                existing.location        = j.get("location") or existing.location
+                existing.contract_type   = j.get("contract_type") or existing.contract_type
+                existing.required_skills = j.get("required_skills") or existing.required_skills
+                existing.source_url      = j.get("apply_url") or existing.source_url
+                existing.is_active       = True
+                skipped += 1
+            else:
+                db.add(Job(
+                    title=title, company=company,
+                    location=(j.get("location") or "")[:255],
+                    description=j.get("description") or title,
+                    required_skills=j.get("required_skills") or [],
+                    contract_type=j.get("contract_type"),
+                    source_name=j.get("source"),
+                    source_url=j.get("apply_url"),
+                    sector=sector,
+                    deadline=deadline,
+                    scraped_at=_dt.now(timezone.utc),
+                    is_active=True,
+                ))
+        db.commit()
+        total = db.query(Job).count()
+    except Exception as e:
+        db.rollback()
+        logger.error("[Scraper] persist failed: %s", e, exc_info=True)
+        total = db.query(Job).count()
+    finally:
+        db.close()
+
+    logger.info(
+        "[Scraper] rekrute=%d emploi_ma=%d dreamjob=%d onejob=%d marocannonces=%d emploi_public=%d | skipped=%d | total_in_db=%d",
+        counts["rekrute"], counts["emploi_ma"], counts["dreamjob"], counts["onejob"],
+        counts["marocannonces"], counts["emploi_public"], skipped, total,
+    )
+    counts["skipped"] = skipped
+    counts["total_in_db"] = total
+    return counts
+
+
 def _send_deadline_notifications() -> None:
     """
     Daily job (8am): find public jobs with deadline ≤ 3 days,
@@ -356,12 +464,12 @@ def start_scheduler() -> None:
         }
     )
 
-    # Scraping job — every 6 hours
+    # Scraping job — every 6 hours (6 Moroccan sites)
     _scheduler.add_job(
-        run_all_scrapers,
+        run_site_scrapers,
         trigger=CronTrigger(hour="0,6,12,18", minute=0),
         id="scrape_all",
-        name="Scrape all job sources",
+        name="Scrape all 6 job sites",
         replace_existing=True,
     )
 
@@ -397,30 +505,11 @@ def start_scheduler() -> None:
 
 
 def _startup_rekrute_scrape() -> None:
-    """
-    One-time startup scrape: fetch 3 pages from Rekrute (~60 real jobs).
-    Called automatically when the DB has fewer than 50 active jobs.
-    Runs in a scheduler thread so it never blocks FastAPI startup.
-    """
-    db = SessionLocal()
+    """One-time startup scrape of all 6 sites when DB has < 50 jobs."""
     try:
-        from scraper.rekrute_scraper import RekruteScraper
-
-        # Temporarily override MAX_PAGES for a lighter startup scrape
-        class _QuickRekrute(RekruteScraper):
-            MAX_PAGES = 3
-
-        scraper = _QuickRekrute(db)
-        result  = scraper.run()
-        _append_log(result.to_dict())
-        logger.info(
-            "[Startup] Rekrute quick-scrape done — "
-            f"added={result.jobs_added} skipped={result.jobs_skipped}"
-        )
+        run_site_scrapers(pages=3)
     except Exception as e:
-        logger.error(f"[Startup] Rekrute quick-scrape failed: {e}", exc_info=True)
-    finally:
-        db.close()
+        logger.error(f"[Startup] site scrape failed: {e}", exc_info=True)
 
 
 def schedule_startup_scrape() -> None:

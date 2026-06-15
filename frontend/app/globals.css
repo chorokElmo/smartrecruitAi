@@ -12,8 +12,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
 
-    /* Indigo primary (Vercel-like precision) */
-    --primary: 239 84% 60%;
+    /* SmartRecruit purple primary (#6B4EFF) */
+    --primary: 252 100% 65%;
     --primary-foreground: 0 0% 100%;
 
     /* Neutrals */
@@ -21,8 +21,8 @@
     --secondary-foreground: 0 0% 15%;
     --muted: 0 0% 94%;
     --muted-foreground: 0 0% 46%;
-    --accent: 240 100% 97%;
-    --accent-foreground: 239 84% 45%;
+    --accent: 252 100% 97%;
+    --accent-foreground: 252 100% 50%;
 
     /* Semantic */
     --destructive: 0 84% 60%;
@@ -33,7 +33,7 @@
     /* Borders & Inputs */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 239 84% 60%;
+    --ring: 252 100% 65%;
     --radius: 0.6rem;
 
     /* Elevation (light) */
@@ -41,34 +41,34 @@
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
     --shadow-lg: 0 12px 32px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04);
-    --shadow-primary: 0 4px 20px rgba(79,70,229,0.25);
+    --shadow-primary: 0 4px 20px rgba(107,78,255,0.25);
   }
 
   .dark {
-    /* ── Dark mode — true neutral (Vercel aesthetic) */
-    --background: 0 0% 5%;
-    --foreground: 0 0% 93%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 93%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 93%;
+    /* ── SmartRecruit purple/dark theme (logo palette) ───────── */
+    --background: 0 0% 5%;              /* #0D0D0D */
+    --foreground: 0 0% 98%;
+    --card: 240 30% 14%;               /* #1A1A2E */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 30% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 239 84% 67%;
+    --primary: 252 100% 65%;           /* #6B4EFF */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 93%;
-    --muted: 0 0% 11%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 239 60% 14%;
-    --accent-foreground: 239 84% 78%;
+    --secondary: 240 24% 18%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 240 22% 16%;
+    --muted-foreground: 240 8% 62%;
+    --accent: 252 60% 22%;
+    --accent-foreground: 252 100% 82%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 239 84% 67%;
+    --border: 240 24% 20%;             /* #2A2A3E */
+    --input: 240 24% 20%;
+    --ring: 252 100% 65%;
 
     /* Elevation (dark) */
     --shadow-xs: 0 1px 2px rgba(0,0,0,0.4);

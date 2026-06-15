@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { recommendationsApi } from "@/lib/api/recommendations";
 import { jobsApi } from "@/lib/api/jobs";
 import { useAuthStore } from "@/lib/store/authStore";
+import { useCvStore } from "@/lib/store/cvStore";
+import { CvGate } from "@/components/layout/CvGate";
 import type { Recommendation, Job } from "@/types/job";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +18,16 @@ import {
   MapPin, Building2, ChevronRight, Target, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+
+interface ScoreSnapshot {
+  avg_score: number;
+  top_score: number;
+  total_matched: number;
+  recorded_at: string;
+}
 
 /* ── Animated counter ─────────────────────────── */
 function useCountUp(target: number, duration = 900) {
@@ -230,19 +242,36 @@ export default function DashboardPage() {
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading]       = useState(true);
+  const [history, setHistory]       = useState<ScoreSnapshot[]>([]);
+  const [minScore, setMinScore]     = useState(50);
+
+  const { hasCv, refresh: refreshCv } = useCvStore();
+
+  const loadHistory = () =>
+    recommendationsApi.history().then((r) => setHistory(r.data)).catch(() => {});
+
+  const loadRecs = (ms: number) =>
+    recommendationsApi.getAll(ms).then((r) => setRecs(r.data)).catch(() => {});
+
+  useEffect(() => { refreshCv(); }, [refreshCv]);
 
   useEffect(() => {
+    if (hasCv !== true) { setLoading(false); return; }
     Promise.all([
-      recommendationsApi.getAll().then((r) => setRecs(r.data)),
+      loadRecs(minScore),
       jobsApi.list({ size: 6 }).then((r) => setRecentJobs(r.data.items)),
+      loadHistory(),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [hasCv]);
+
+  const changeMinScore = (ms: number) => { setMinScore(ms); loadRecs(ms); };
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const { data } = await recommendationsApi.generate();
-      setRecs(data);
+      await recommendationsApi.generate();
+      await loadRecs(minScore);
+      loadHistory();
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { detail?: string }; }; code?: string })?.response?.data?.detail ??
@@ -263,6 +292,8 @@ export default function DashboardPage() {
     { icon: Sparkles,   label: "My Skills",   value: user?.skills?.length ?? 0,        gradient: "gradient-bg-emerald", delay: 0.06 },
     { icon: TrendingUp, label: "Top Match",   value: Math.round(topScore * 100), suffix: "%", gradient: "gradient-bg-amber", delay: 0.12 },
   ];
+
+  if (hasCv === false) return <CvGate variant="dashboard" />;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -286,6 +317,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <Button
+          data-tour="generate"
           onClick={handleGenerate}
           disabled={generating}
           className="gradient-bg text-white border-0 h-9 px-4 text-sm font-medium gap-2 shrink-0"
@@ -298,6 +330,7 @@ export default function DashboardPage() {
 
       {/* ── Stat cards ───────────────────────────── */}
       <motion.div
+        data-tour="chart"
         variants={listVariants}
         initial="hidden"
         animate="visible"
@@ -338,20 +371,50 @@ export default function DashboardPage() {
             </Link>
           </div>
 
+          {/* Match-level filter */}
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border">
+            <span className="text-[11px] text-muted-foreground ml-1">Affichage :</span>
+            {[
+              { ms: 50, label: "✅ Bon match (50%+)" },
+              { ms: 30, label: "👍 Correct (30%+)" },
+              { ms: 0,  label: "🔍 Tout afficher" },
+            ].map(({ ms, label }) => (
+              <button
+                key={ms}
+                onClick={() => changeMinScore(ms)}
+                className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
+                  minScore === ms
+                    ? "gradient-bg text-white border-transparent"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="p-2">
             {loading ? (
               <div className="space-y-1.5 p-2">
                 {[0, 1, 2, 3].map((i) => <SkeletonListItem key={i} />)}
               </div>
+            ) : recs.length === 0 && minScore === 50 ? (
+              <div className="py-10 px-6 text-center space-y-3">
+                <p className="text-sm font-medium">Aucun bon match trouvé.</p>
+                <p className="text-sm text-muted-foreground">💡 Essayez "Correct (30%+)" pour voir plus de résultats.</p>
+                <Button
+                  onClick={() => changeMinScore(30)}
+                  className="gradient-bg text-white border-0 h-9 px-4 text-sm"
+                  style={{ boxShadow: "var(--shadow-primary)" }}
+                >
+                  👍 Voir les offres Correct (30%+)
+                </Button>
+              </div>
             ) : recs.length === 0 ? (
               <EmptyState
                 icon={Brain}
-                title="No matches yet"
-                description={
-                  (user?.skills?.length ?? 0) === 0
-                    ? "Upload your CV first to extract your skills, then run AI matching."
-                    : 'Click "Run AI Matching" above to score all jobs against your profile.'
-                }
+                title="Aucune correspondance à ce niveau"
+                description='Lancez "Run AI Matching" ou élargissez davantage la recherche.'
                 action={{ label: "Run AI Matching", onClick: handleGenerate }}
               />
             ) : (
@@ -448,6 +511,36 @@ export default function DashboardPage() {
               </motion.span>
             ))}
           </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── Score evolution chart ────────────────── */}
+      {history.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.33, duration: 0.35 }}
+          className="card-base p-5"
+        >
+          <h2 className="text-sm font-semibold mb-4">📈 Évolution de votre compatibilité</h2>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart
+              data={history.map((h) => ({
+                date: new Date(h.recorded_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+                avg_score: Math.round(h.avg_score),
+              }))}
+              margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" unit="%" />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                formatter={(v: number) => [`${v}%`, "Score moyen"]}
+              />
+              <Line type="monotone" dataKey="avg_score" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </motion.div>
       )}
 

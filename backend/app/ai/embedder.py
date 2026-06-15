@@ -64,6 +64,12 @@ def _get_model():
     if _model is None:
         logger.info(f"Loading sentence-transformers model '{MODEL_NAME}' ...")
         try:
+            import os
+            try:
+                import torch
+                torch.set_num_threads(os.cpu_count() or 4)
+            except Exception:
+                pass
             from sentence_transformers import SentenceTransformer
             _model = SentenceTransformer(MODEL_NAME)
             logger.info(f"Model '{MODEL_NAME}' loaded — embedding dim={EMBEDDING_DIM}")

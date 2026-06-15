@@ -16,6 +16,7 @@ class Recommendation(Base):
     skill_score       = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))  # skill×0.60 component
     title_score       = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))  # title×0.25 component
     experience_score  = Column(Float, nullable=False, default=0.5, server_default=text("0.5"))  # exp×0.15 component
+    diploma_score     = Column(Float, nullable=False, default=0.7, server_default=text("0.7"))  # diploma×0.15 component
     semantic_score    = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))  # fuzzy sub-score
     keyword_score     = Column(Float, nullable=False, default=0.0, server_default=text("0.0"))  # exact sub-score
     matching_skills   = Column(JSON, nullable=False, default=list)

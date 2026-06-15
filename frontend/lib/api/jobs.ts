@@ -6,6 +6,8 @@ export const jobsApi = {
 
   getById: (id: string) => apiClient.get(`/jobs/${id}`),
 
+  filters: () => apiClient.get("/jobs/filters"),
+
   save:   (id: string) => apiClient.post(`/jobs/${id}/save`),
   unsave: (id: string) => apiClient.delete(`/jobs/${id}/save`),
 

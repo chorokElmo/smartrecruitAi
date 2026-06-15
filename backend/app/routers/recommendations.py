@@ -14,11 +14,12 @@ router = APIRouter()
 
 @router.get("", response_model=list[RecommendationResponse])
 def get_recommendations(
+    min_score: int = Query(100, ge=0, le=100),
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Return the current user's stored AI-ranked job recommendations."""
-    return RecommendationService(db).get_recommendations(user_id)
+    """Return stored recommendations filtered by min_score (default 100 = exact match only)."""
+    return RecommendationService(db).get_recommendations(user_id, min_score=min_score)
 
 
 @router.post("/generate", response_model=list[RecommendationResponse])
@@ -33,6 +34,15 @@ def generate_recommendations(
       final = skill×0.60 + title×0.25 + experience×0.15
     """
     return RecommendationService(db, matcher).generate(user_id)
+
+
+@router.get("/history")
+def get_history(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return the last 10 score-history snapshots ordered by date."""
+    return RecommendationService(db).get_history(user_id)
 
 
 @router.post("/live-match")

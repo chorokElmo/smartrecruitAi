@@ -1,0 +1,14 @@
+<svg width="200" height="56" viewBox="0 0 200 56" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <!-- Wordmark: SMART (purple) / RECRUIT (dark), stacked -->
+  <text x="0" y="26" font-size="22" font-weight="800" letter-spacing="1" fill="#6B4EFF">SMART</text>
+  <text x="0" y="50" font-size="22" font-weight="800" letter-spacing="1" fill="#1A1A2E">RECRUIT</text>
+
+  <!-- "ai" mark -->
+  <text x="118" y="44" font-size="40" font-weight="900" fill="#1A1A2E">ai</text>
+
+  <!-- briefcase badge -->
+  <circle cx="185" cy="14" r="13" fill="#6B4EFF"/>
+  <rect x="178" y="11" width="14" height="9" rx="2" fill="#fff"/>
+  <rect x="183" y="8" width="4" height="3" rx="1" fill="#fff"/>
+  <rect x="184" y="14" width="2" height="3" rx="1" fill="#6B4EFF"/>
+</svg>
