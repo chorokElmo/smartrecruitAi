@@ -6,6 +6,8 @@ export const jobsApi = {
 
   getById: (id: string) => apiClient.get(`/jobs/${id}`),
 
+  count: () => apiClient.get("/jobs/count"),
+
   filters: () => apiClient.get("/jobs/filters"),
 
   save:   (id: string) => apiClient.post(`/jobs/${id}/save`),

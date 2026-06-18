@@ -57,7 +57,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Mobile logo */}
         <Link href="/" className="mb-8 flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-white.png" alt="SmartRecruit AI" className="h-20 w-auto" />
+          <img src="/logo.png" alt="SmartRecruit AI" className="h-20 w-auto" />
         </Link>
         <div className="w-full max-w-md">
           {children}

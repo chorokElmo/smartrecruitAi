@@ -1,7 +1,7 @@
 "use client";
 import { useAuthStore } from "@/lib/store/authStore";
 import { usePathname } from "next/navigation";
-import { Menu, HelpCircle } from "lucide-react";
+import { Menu, HelpCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useOnboardingStore } from "@/lib/store/onboardingStore";
@@ -33,14 +33,13 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
 
   return (
     <header
-      className="h-14 border-b border-border bg-card/90 backdrop-blur-md flex items-center gap-3 px-4 sticky top-0 z-30"
-      style={{ boxShadow: "0 1px 0 hsl(var(--border))" }}
+      className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center gap-3 px-4 md:px-6 sticky top-0 z-30"
     >
       {/* Hamburger (mobile) */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden w-8 h-8 rounded-lg shrink-0"
+        className="md:hidden w-9 h-9 rounded-lg shrink-0"
         onClick={onMenuToggle}
         aria-label="Open menu"
       >
@@ -48,19 +47,32 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
       </Button>
 
       {/* Page title / breadcrumb */}
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 text-sm">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5">
           {isJobDetail ? (
             <>
-              <span className="text-muted-foreground font-medium hidden sm:inline">Jobs</span>
+              <span className="text-muted-foreground font-medium hidden sm:inline">Offres</span>
               <span className="text-muted-foreground hidden sm:inline">/</span>
-              <span className="font-semibold text-foreground truncate max-w-[200px]">Detail</span>
+              <span className="font-bold text-foreground truncate max-w-[200px]">Détail</span>
             </>
           ) : (
-            <span className="font-semibold text-foreground">{pageTitle}</span>
+            <h1 className="font-bold text-lg text-foreground tracking-tight">{pageTitle}</h1>
           )}
         </div>
       </div>
+
+      {/* Search (decorative quick-jump to jobs) */}
+      <div className="hidden lg:flex items-center ml-6 flex-1 max-w-sm">
+        <div className="flex items-center gap-2 w-full h-9 px-3 rounded-lg bg-secondary/60 border border-transparent focus-within:border-primary/30 focus-within:bg-card transition-colors">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input
+            placeholder="Rechercher une offre…"
+            className="bg-transparent border-0 outline-none text-sm w-full placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1" />
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">

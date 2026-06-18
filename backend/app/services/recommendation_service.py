@@ -307,6 +307,14 @@ class RecommendationService:
         logger.info("[Recs] Batch matching %d jobs... done in %.1fs (was ~45s per-job)",
                     len(jobs), _time.perf_counter() - _t0)
 
+        # Deduplicate by job_id — keep only the highest score per job
+        seen_jobs: dict[str, dict] = {}
+        for entry in scored:
+            jid = str(entry["job"].id)
+            if jid not in seen_jobs or entry["score"] > seen_jobs[jid]["score"]:
+                seen_jobs[jid] = entry
+        scored = list(seen_jobs.values())
+
         scored.sort(key=lambda x: x["score"], reverse=True)
         scored = scored[:MAX_RECS]
 

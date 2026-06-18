@@ -4,44 +4,44 @@
 
 @layer base {
   :root {
-    /* ── Core palette ─────────────────────────────── */
-    --background: 0 0% 97%;
-    --foreground: 0 0% 7%;
+    /* ── Core palette — modern light SaaS ──────────── */
+    --background: 240 24% 98%;          /* #F8F8FB cool off-white canvas */
+    --foreground: 240 14% 12%;          /* near-black slate */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    --card-foreground: 240 14% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --popover-foreground: 240 14% 12%;
 
     /* SmartRecruit purple primary (#6B4EFF) */
     --primary: 252 100% 65%;
     --primary-foreground: 0 0% 100%;
 
     /* Neutrals */
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 15%;
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 46%;
+    --secondary: 240 20% 96%;
+    --secondary-foreground: 240 14% 20%;
+    --muted: 240 20% 96%;
+    --muted-foreground: 240 8% 46%;
     --accent: 252 100% 97%;
-    --accent-foreground: 252 100% 50%;
+    --accent-foreground: 252 80% 52%;
 
     /* Semantic */
-    --destructive: 0 84% 60%;
+    --destructive: 350 84% 58%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 76% 36%;
+    --success: 152 60% 40%;
     --warning: 38 92% 50%;
 
     /* Borders & Inputs */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 240 16% 91%;
+    --input: 240 16% 91%;
     --ring: 252 100% 65%;
-    --radius: 0.6rem;
+    --radius: 0.75rem;
 
-    /* Elevation (light) */
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
-    --shadow-lg: 0 12px 32px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04);
-    --shadow-primary: 0 4px 20px rgba(107,78,255,0.25);
+    /* Elevation (light) — soft, layered, premium */
+    --shadow-xs: 0 1px 2px rgba(16,18,40,0.04);
+    --shadow-sm: 0 1px 2px rgba(16,18,40,0.04), 0 1px 3px rgba(16,18,40,0.06);
+    --shadow-md: 0 2px 4px rgba(16,18,40,0.04), 0 6px 16px rgba(16,18,40,0.08);
+    --shadow-lg: 0 4px 8px rgba(16,18,40,0.04), 0 16px 40px rgba(16,18,40,0.10);
+    --shadow-primary: 0 6px 24px rgba(107,78,255,0.30);
   }
 
   .dark {
@@ -140,14 +140,18 @@
 
   /* ── Cards ───────────────────────────────────── */
   .card-base {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  /* Dark mode keeps the glassmorphism look */
+  .dark .card-base {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px;
-    box-shadow: var(--shadow-sm);
   }
-  .card-base:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
   .card-hover {
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   }
@@ -189,28 +193,35 @@
   /* ── Nav active state (Linear-style) ─────────── */
   .nav-active {
     position: relative;
-    background: rgba(107,78,255,0.15);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.06));
     color: hsl(var(--primary));
-  }
-  .nav-inactive:hover { background: rgba(107,78,255,0.15) !important; }
-  .nav-active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2.5px;
-    height: 60%;
-    background: hsl(var(--primary));
-    border-radius: 0 2px 2px 0;
+    box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.14);
   }
   .nav-inactive {
     color: hsl(var(--muted-foreground));
-    transition: color 0.12s ease, background 0.12s ease;
+    transition: color 0.15s ease, background 0.15s ease;
   }
   .nav-inactive:hover {
     color: hsl(var(--foreground));
-    background: hsl(var(--muted));
+    background: hsl(var(--secondary));
+  }
+
+  /* Section eyebrow label */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground) / 0.7);
+  }
+
+  /* Stat-card gradient icon chip */
+  .stat-icon {
+    width: 2.5rem; height: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.75rem;
+    color: #fff;
+    box-shadow: var(--shadow-primary);
   }
 
   /* ── Score badge utilities ───────────────────── */
@@ -274,6 +285,27 @@
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(107,78,255,0.4); }
+  50%      { box-shadow: 0 0 40px rgba(107,78,255,0.8); }
+}
+.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-20px); }
+}
+.blob {
+  position: absolute;
+  width: 28rem; height: 28rem;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+.blob-1 { top: -4rem; left: -4rem; background: #6B4EFF; animation: float 6s ease-in-out infinite; }
+.blob-2 { bottom: -4rem; right: -4rem; background: #A855F7; animation: float 8s ease-in-out infinite; animation-delay: 2s; }
 
 @keyframes scale-in {
   from { opacity: 0; transform: scale(0.96); }

@@ -40,8 +40,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen((v) => !v)} />
-        <main className="flex-1 p-5 md:p-6 overflow-auto">
-          {children}
+        <main className="flex-1 p-5 md:p-8 overflow-auto">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
     </div>
