@@ -10,6 +10,14 @@ export const cvApi = {
     });
   },
 
+  uploadImage: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiClient.post("/cv/upload-image", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
   getLatest: () => apiClient.get("/cv/latest"),
 
   generate: () => apiClient.post("/cv/generate", null, { responseType: "blob" }),

@@ -119,7 +119,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-5">
 
       {/* ── Toast stack ────────────────────────────── */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none items-stretch sm:items-end">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div

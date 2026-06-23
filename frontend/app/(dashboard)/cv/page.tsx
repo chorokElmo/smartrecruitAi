@@ -10,7 +10,7 @@ import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import {
   Upload, FileText, CheckCircle2, AlertCircle,
   Loader2, RefreshCw, Sparkles, ArrowRight,
-  CloudUpload, GraduationCap, Briefcase, Clock,
+  CloudUpload, GraduationCap, Briefcase, Clock, Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,8 +33,11 @@ export default function CVPage() {
   const router                              = useRouter();
   const { setHasCv, setHasRecommendations } = useCvStore();
   const inputRef                            = useRef<HTMLInputElement>(null);
+  const imageInputRef                       = useRef<HTMLInputElement>(null);
   const [analyzing, setAnalyzing]           = useState(false);
   const [tab, setTab]                       = useState<"upload" | "generate">("upload");
+  const [uploadMode, setUploadMode]         = useState<"pdf" | "image">("pdf");
+  const [imagePreview, setImagePreview]     = useState<string | null>(null);
   const [genTemplate, setGenTemplate]       = useState("Modern");
   const [genLoading, setGenLoading]         = useState(false);
   const [genUrl, setGenUrl]                 = useState<string | null>(null);
@@ -94,7 +97,57 @@ export default function CVPage() {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (!file) return;
+    if (uploadMode === "image") handleImageFile(file);
+    else handleFile(file);
+  };
+
+  const handleImageFile = async (file: File) => {
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp"];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(png|jpe?g|webp|bmp)$/i)) {
+      setError("Format non supporté. Utilisez PNG, JPG, JPEG ou WEBP.");
+      setState("error");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Fichier trop lourd (max 10 MB).");
+      setState("error");
+      return;
+    }
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setFileName(file.name);
+    setState("uploading");
+    setError("");
+    setResult(null);
+    setMatchCount(null);
+    try {
+      const { data } = await cvApi.uploadImage(file);
+      setResult({
+        extracted_skills: data.extracted_skills ?? [],
+        diploma:          data.diploma,
+        domain:           data.domain,
+        years_experience: data.years_experience,
+      });
+      setState("success");
+      setHasCv(true);
+      setAnalyzing(true);
+      try {
+        await recommendationsApi.generate();
+        setHasRecommendations(true);
+      } catch { /* matching will retry on dashboard */ }
+      router.push("/dashboard");
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Échec de l'analyse. Réessayez avec une image plus nette.";
+      setError(msg);
+      setState("error");
+      setImagePreview(null);
+    }
   };
 
   const handleGenerate = async () => {
@@ -183,7 +236,7 @@ export default function CVPage() {
       {/* ── Generate-CV tab ───────────────────────── */}
       {tab === "generate" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { name: "Modern",       accent: "from-primary to-violet-400" },
               { name: "Classique",    accent: "from-slate-500 to-slate-300" },
@@ -215,7 +268,7 @@ export default function CVPage() {
             </Button>
           ) : (
             <div className="space-y-3">
-              <iframe src={genUrl} title="CV généré" className="w-full h-[480px] rounded-xl border border-border" />
+              <iframe src={genUrl} title="CV généré" className="w-full h-[300px] sm:h-[480px] rounded-xl border border-border" />
               <div className="flex gap-2">
                 <Button onClick={downloadGenerated} className="flex-1 h-10 gradient-bg text-white border-0 gap-2 text-sm"
                         style={{ boxShadow: "var(--shadow-primary)" }}>
@@ -290,7 +343,38 @@ export default function CVPage() {
           "gradient-bg"
         }`} />
 
-        <div className="p-5">
+        <div className="p-5 space-y-4">
+          {/* Format selector */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { setUploadMode("pdf"); setState("idle"); setImagePreview(null); setError(""); }}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all ${
+                uploadMode === "pdf"
+                  ? "gradient-bg text-white border-transparent shadow-sm"
+                  : "border-border text-muted-foreground hover:text-foreground bg-muted/40"
+              }`}
+            >
+              <FileText className="w-4 h-4" />PDF
+            </button>
+            <button
+              onClick={() => { setUploadMode("image"); setState("idle"); setImagePreview(null); setError(""); }}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all ${
+                uploadMode === "image"
+                  ? "gradient-bg text-white border-transparent shadow-sm"
+                  : "border-border text-muted-foreground hover:text-foreground bg-muted/40"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />Image (PNG / JPG)
+            </button>
+          </div>
+
+          {uploadMode === "image" && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700">
+              <ImageIcon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>Votre CV en photo ou scan sera analysé par OCR. Pour de meilleurs résultats, utilisez une image nette et bien éclairée.</span>
+            </div>
+          )}
+
           <input
             ref={inputRef}
             type="file"
@@ -298,12 +382,23 @@ export default function CVPage() {
             className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/bmp"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); }}
+          />
 
           <motion.div
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
-            onClick={() => state !== "uploading" && inputRef.current?.click()}
+            onClick={() => {
+              if (state === "uploading") return;
+              if (uploadMode === "image") imageInputRef.current?.click();
+              else inputRef.current?.click();
+            }}
             animate={{
               scale: dragOver ? 1.01 : 1,
               borderColor:
@@ -331,16 +426,27 @@ export default function CVPage() {
                     className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center mx-auto"
                     style={{ boxShadow: "var(--shadow-primary)" }}
                   >
-                    <CloudUpload className="w-7 h-7 text-white" />
+                    {uploadMode === "image"
+                      ? <ImageIcon className="w-7 h-7 text-white" />
+                      : <CloudUpload className="w-7 h-7 text-white" />
+                    }
                   </motion.div>
                   <div>
                     <p className="font-semibold text-foreground">
-                      {dragOver ? "Drop your CV here" : "Drag & drop your CV"}
+                      {dragOver
+                        ? "Déposez votre fichier ici"
+                        : uploadMode === "image"
+                          ? "Glissez votre CV (photo / scan)"
+                          : "Glissez votre CV PDF"
+                      }
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">or click to browse your files</p>
+                    <p className="text-sm text-muted-foreground mt-1">ou cliquez pour choisir un fichier</p>
                   </div>
                   <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" />PDF only</span>
+                    {uploadMode === "image"
+                      ? <span className="flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5" />PNG, JPG, WEBP</span>
+                      : <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" />PDF uniquement</span>
+                    }
                     <span className="text-border">·</span>
                     <span>Max 10 MB</span>
                   </div>

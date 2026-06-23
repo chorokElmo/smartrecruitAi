@@ -300,8 +300,7 @@ export default function DashboardPage() {
   const enoughHistory = history.length >= 2;
 
   return (
-    <div className="dark -m-5 md:-m-8 p-5 md:p-8 min-h-[calc(100vh-4rem)] bg-[#0A0A0F] text-white">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
 
         {/* ── Header ───────────────────────────────── */}
         <motion.div
@@ -339,7 +338,7 @@ export default function DashboardPage() {
           variants={listVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 lg:grid-cols-5 gap-4"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4"
         >
           {loading
             ? [0, 1, 2, 3, 4].map((i) => <SkeletonStatCard key={i} />)
@@ -358,7 +357,7 @@ export default function DashboardPage() {
             <TrendingUp className="w-4 h-4 text-primary" /> Progression de votre compatibilité
           </h2>
           {enoughHistory ? (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={200}>
               <LineChart
                 data={history.map((h) => ({
                   date: new Date(h.recorded_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
@@ -390,14 +389,14 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* ── Main grid ────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
 
           {/* Recommendations */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18, duration: 0.35 }}
-            className="lg:col-span-3 card-base fade-in overflow-hidden"
+            className="xl:col-span-3 card-base fade-in overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <div className="flex items-center gap-2">
@@ -473,7 +472,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.24, duration: 0.35 }}
-            className="lg:col-span-2 card-base fade-in overflow-hidden"
+            className="xl:col-span-2 card-base fade-in overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <div className="flex items-center gap-2">
@@ -555,7 +554,6 @@ export default function DashboardPage() {
         {/* ── Roadmap card ─────────────────────────── */}
         <RoadmapCard hasSkills={hasSkills} />
 
-      </div>
     </div>
   );
 }

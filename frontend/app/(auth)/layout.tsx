@@ -53,11 +53,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background">
-        {/* Mobile logo */}
-        <Link href="/" className="mb-8 flex justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 bg-background min-h-screen overflow-y-auto">
+        {/* Mobile logo — hidden on large screens where the left panel shows */}
+        <Link href="/" className="lg:hidden mb-8 flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="SmartRecruit AI" className="h-20 w-auto" />
+          <img src="/logo.png" alt="SmartRecruit AI" className="h-14 w-auto" />
         </Link>
         <div className="w-full max-w-md">
           {children}

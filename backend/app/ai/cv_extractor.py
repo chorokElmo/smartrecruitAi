@@ -45,6 +45,39 @@ def _ocr_pdf(file_path: str) -> str:
         return ""
 
 
+def extract_text_from_image(file_path: str) -> str:
+    """OCR a plain image file (PNG, JPG, WEBP…) and return cleaned text."""
+    import io
+    import os
+    import pytesseract
+    from PIL import Image
+
+    for cand in (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    ):
+        if os.path.exists(cand):
+            pytesseract.pytesseract.tesseract_cmd = cand
+            break
+
+    try:
+        img = Image.open(file_path).convert("RGB")
+        # Upscale small images for better OCR accuracy
+        w, h = img.size
+        if max(w, h) < 1500:
+            scale = 1500 / max(w, h)
+            img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+        try:
+            text = pytesseract.image_to_string(img, lang="fra+eng")
+        except Exception:
+            text = pytesseract.image_to_string(img)
+        logger.info("[CV] image OCR produced %d chars", len(text))
+        return _clean(text)
+    except Exception as e:
+        logger.warning("[CV] image OCR failed: %s", e)
+        raise ValueError(f"Could not extract text from image: {e}")
+
+
 def extract_text_from_pdf(file_path: str) -> str:
     """Return cleaned text from a PDF. Falls back to OCR if text layer is empty."""
     text_parts = []

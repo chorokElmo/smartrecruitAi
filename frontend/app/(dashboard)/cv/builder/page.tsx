@@ -108,9 +108,9 @@ export default function CvBuilderPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[40%_60%] gap-6">
+    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[42%_58%] gap-4 lg:gap-6">
       {/* ── LEFT: form ── */}
-      <div className="space-y-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto pr-2">
+      <div className="space-y-4 lg:space-y-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2">
         <h1 className="text-xl font-bold">Créateur de CV</h1>
 
         {/* Photo */}
@@ -125,7 +125,7 @@ export default function CvBuilderPage() {
         </div>
 
         {/* Identity */}
-        <div className="card-base p-4 grid grid-cols-2 gap-3">
+        <div className="card-base p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Prénom" value={prenom} set={setPrenom} />
           <Field label="Nom" value={nom} set={setNom} />
           <div className="col-span-2"><Field label="Titre du poste" value={titre} set={setTitre} /></div>
@@ -183,7 +183,7 @@ export default function CvBuilderPage() {
             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setEdu([...edu, { diploma: "", school: "", from: "", to: "" }])}><Plus className="w-3 h-3" />Ajouter</Button>
           </div>
           {edu.map((e, i) => (
-            <div key={i} className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-border pt-2">
               <Input className="h-8 text-xs col-span-2" placeholder="Diplôme" value={e.diploma} onChange={(ev) => setEdu(edu.map((x, j) => j === i ? { ...x, diploma: ev.target.value } : x))} />
               <Input className="h-8 text-xs col-span-2" placeholder="École" value={e.school} onChange={(ev) => setEdu(edu.map((x, j) => j === i ? { ...x, school: ev.target.value } : x))} />
               <Input className="h-8 text-xs" placeholder="De" value={e.from} onChange={(ev) => setEdu(edu.map((x, j) => j === i ? { ...x, from: ev.target.value } : x))} />
@@ -200,7 +200,7 @@ export default function CvBuilderPage() {
             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setExp([...exp, { role: "", company: "", city: "", from: "", to: "", desc: "" }])}><Plus className="w-3 h-3" />Ajouter</Button>
           </div>
           {exp.map((e, i) => (
-            <div key={i} className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-border pt-2">
               <Input className="h-8 text-xs" placeholder="Poste" value={e.role} onChange={(ev) => setExp(exp.map((x, j) => j === i ? { ...x, role: ev.target.value } : x))} />
               <Input className="h-8 text-xs" placeholder="Entreprise" value={e.company} onChange={(ev) => setExp(exp.map((x, j) => j === i ? { ...x, company: ev.target.value } : x))} />
               <Input className="h-8 text-xs" placeholder="Ville" value={e.city} onChange={(ev) => setExp(exp.map((x, j) => j === i ? { ...x, city: ev.target.value } : x))} />
@@ -221,7 +221,7 @@ export default function CvBuilderPage() {
             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setRefs([...refs, { name: "", role: "", company: "", phone: "", email: "" }])}><Plus className="w-3 h-3" />Ajouter</Button>
           </div>
           {refs.map((r, i) => (
-            <div key={i} className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-border pt-2">
               <Input className="h-8 text-xs" placeholder="Nom" value={r.name} onChange={(ev) => setRefs(refs.map((x, j) => j === i ? { ...x, name: ev.target.value } : x))} />
               <Input className="h-8 text-xs" placeholder="Poste" value={r.role} onChange={(ev) => setRefs(refs.map((x, j) => j === i ? { ...x, role: ev.target.value } : x))} />
               <Input className="h-8 text-xs" placeholder="Entreprise" value={r.company} onChange={(ev) => setRefs(refs.map((x, j) => j === i ? { ...x, company: ev.target.value } : x))} />
@@ -241,7 +241,7 @@ export default function CvBuilderPage() {
       </div>
 
       {/* ── RIGHT: live preview (A4) ── */}
-      <div className="overflow-auto">
+      <div className="overflow-x-auto rounded-xl">
         <div ref={previewRef} style={{ width: 794, minHeight: 1123, display: "grid", gridTemplateColumns: "38% 62%", background: "#fff", color: "#1A1A2E", fontFamily: "Inter, Arial, sans-serif" }}>
           {/* Sidebar */}
           <div style={{ background: SIDEBAR, color: "#fff", padding: "32px 24px" }}>

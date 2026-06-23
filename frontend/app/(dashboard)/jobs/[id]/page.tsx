@@ -365,7 +365,7 @@ export default function JobDetailPage() {
             <div className="border-t border-border my-4" />
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2">
               {job.source_url ? (
                 <a href={job.source_url} target="_blank" rel="noopener noreferrer">
                   <Button
@@ -447,7 +447,7 @@ export default function JobDetailPage() {
             <div className="px-5 py-3.5 border-b border-border">
               <h2 className="text-sm font-semibold">Match Breakdown</h2>
             </div>
-            <div className="px-5 py-4 grid grid-cols-3 gap-4">
+            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: "Skills",      value: rec.skill_score      ?? rec.score, color: "text-primary" },
                 { label: "Title fit",   value: rec.title_score      ?? 0,         color: "text-violet-500" },

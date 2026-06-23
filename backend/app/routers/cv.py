@@ -32,11 +32,77 @@ async def upload_cv(
     return await CVService(db).upload_and_process(user_id, file)
 
 
+@router.post("/upload-image", response_model=CVResponse, status_code=201)
+async def upload_cv_image(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a CV as an image (PNG, JPG, JPEG, WEBP).
+    Uses pytesseract OCR to extract text, then runs the same skill-extraction
+    pipeline as the PDF upload endpoint.
+    """
+    from app.utils.file_handler import save_upload
+    from app.repositories.cv_repository import CVRepository
+    from app.repositories.user_repository import UserRepository
+    from app.ai.llm_extractor import extract_cv_data
+    from app.core.exceptions import NotFoundError
+    import uuid as _uuid
+
+    allowed = {"image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff"}
+    ct = (file.content_type or "").lower()
+    if ct not in allowed and not (file.filename or "").lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff")):
+        raise HTTPException(status_code=400, detail="Only image files are accepted (PNG, JPG, WEBP)")
+
+    # Save the image file
+    file_path = await save_upload(file, subfolder="cvs")
+
+    cv_repo   = CVRepository(db)
+    user_repo = UserRepository(db)
+
+    # Create CV record
+    cv = cv_repo.create(
+        user_id=_uuid.UUID(user_id),
+        file_path=file_path,
+        original_name=file.filename or "cv-image.png",
+    )
+
+    # OCR the image
+    try:
+        text = extract_text_from_image(file_path)
+    except ValueError:
+        text = ""
+
+    # Extract structured data
+    extraction = extract_cv_data(text) if text else None
+    skills           = extraction.skills           if extraction else []
+    diploma          = extraction.diploma          if extraction else None
+    domain           = extraction.domain           if extraction else None
+    years_experience = extraction.years_experience if extraction else None
+
+    # Persist
+    cv = cv_repo.update_extracted(cv, text=text, skills=skills, diploma=diploma,
+                                  domain=domain, years_experience=years_experience)
+
+    # Sync to user profile
+    user = user_repo.get_by_id(_uuid.UUID(user_id))
+    if user:
+        merged_skills = list({*user.skills, *skills})
+        updates: dict = {"skills": merged_skills}
+        if diploma          and not user.diploma:          updates["diploma"]          = diploma
+        if domain           and not user.domain:           updates["domain"]           = domain
+        if years_experience and not user.years_experience: updates["years_experience"] = years_experience
+        user_repo.update(user, updates)
+
+    return CVResponse.model_validate(cv)
+
+
 @router.post("/debug")
 async def debug_cv(file: UploadFile = File(...)):
     """Dev-only: inspect exactly where CV extraction fails."""
     import os, re, tempfile
-    from app.ai.cv_extractor import extract_text_from_pdf
+    from app.ai.cv_extractor import extract_text_from_pdf, extract_text_from_image
     from app.ai.llm_extractor import extract_with_llm, extract_name_with_groq
     from app.ai.skill_extractor import extract_skills, find_email, find_name_fallback
 

@@ -62,7 +62,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
       </div>
 
       {/* Search (decorative quick-jump to jobs) */}
-      <div className="hidden lg:flex items-center ml-6 flex-1 max-w-sm">
+      <div className="hidden md:flex items-center ml-4 lg:ml-6 flex-1 max-w-xs lg:max-w-sm">
         <div className="flex items-center gap-2 w-full h-9 px-3 rounded-lg bg-secondary/60 border border-transparent focus-within:border-primary/30 focus-within:bg-card transition-colors">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input

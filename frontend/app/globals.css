@@ -82,10 +82,13 @@
   body { @apply bg-background text-foreground antialiased; font-feature-settings: "cv02","cv03","cv04","cv11"; }
 
   /* Premium scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.35); }
+
+  /* Smooth focus transitions */
+  input, textarea, select, button { transition-property: border-color, box-shadow, background-color, color; transition-duration: 150ms; }
 
   /* Smooth selection */
   ::selection { background: hsl(var(--primary) / 0.15); color: hsl(var(--foreground)); }
