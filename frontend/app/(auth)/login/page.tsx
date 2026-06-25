@@ -22,12 +22,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
+      console.log("[Login] Step 1: calling login API...");
       const { data: tokenData } = await authApi.login(form);
+      console.log("[Login] Step 2: login OK, storing token");
       localStorage.setItem("access_token", tokenData.access_token);
+      console.log("[Login] Step 3: calling /auth/me...");
       const { data: user } = await authApi.me();
+      console.log("[Login] Step 4: me() OK, user=", user?.email);
       setAuth(user, tokenData.access_token);
+      console.log("[Login] Step 5: setAuth done, pushing to /dashboard");
       router.push("/dashboard");
     } catch (err: unknown) {
+      console.error("[Login] ERROR:", err);
       setError(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
         "Invalid email or password"

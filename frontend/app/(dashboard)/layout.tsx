@@ -18,7 +18,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
-    if (hydrated && !isAuthenticated) router.push("/login");
+    console.log("[DashboardLayout] hydrated=", hydrated, "isAuthenticated=", isAuthenticated);
+    if (hydrated && !isAuthenticated) {
+      console.log("[DashboardLayout] NOT authenticated → redirecting to /login");
+      router.push("/login");
+    }
   }, [hydrated, isAuthenticated, router]);
 
   if (!hydrated) return null;   // wait for localStorage → store sync
