@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Josefin_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-geist-sans" });
+const josefinSans = Josefin_Sans({ subsets: ["latin"], variable: "--font-geist-sans" });
 
 export const metadata: Metadata = {
   title: "SmartRecruit AI — Find your job with AI",
@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={josefinSans.variable} suppressHydrationWarning>
       <body className="font-sans overflow-x-hidden">
-        <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
         </ThemeProvider>
       </body>

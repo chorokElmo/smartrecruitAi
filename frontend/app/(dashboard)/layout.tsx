@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { OnboardingTour } from "@/components/layout/OnboardingTour";
+import { VideoModal } from "@/components/layout/VideoModal";
 import { useAuthStore } from "@/lib/store/authStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -18,9 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
-    console.log("[DashboardLayout] hydrated=", hydrated, "isAuthenticated=", isAuthenticated);
     if (hydrated && !isAuthenticated) {
-      console.log("[DashboardLayout] NOT authenticated → redirecting to /login");
       router.push("/login");
     }
   }, [hydrated, isAuthenticated, router]);
@@ -31,15 +30,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-background">
       <OnboardingTour />
-      {/* Desktop sidebar — always visible on md+ */}
-      <div className="hidden md:flex">
-        <Sidebar />
-      </div>
+      <VideoModal />
+      {/* Desktop sidebar — always visible on lg+, collapsible */}
+      <Sidebar />
 
-      {/* Mobile sidebar — controlled by state */}
-      <div className="md:hidden">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+      {/* Mobile drawer */}
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

@@ -12,7 +12,7 @@ export function CvGate({ variant }: { variant: "dashboard" | "jobs" }) {
       </div>
       {variant === "dashboard" ? (
         <>
-          <h1 className="text-2xl font-bold mb-3">📄 Bienvenue sur SmartRecruit AI</h1>
+          <h1 className="text-2xl font-bold mb-3">Bienvenue sur SmartRecruit AI</h1>
           <p className="text-muted-foreground leading-relaxed mb-8">
             Pour commencer, uploadez votre CV.<br />
             Nous extrairons automatiquement vos compétences, diplôme et expérience
@@ -21,7 +21,7 @@ export function CvGate({ variant }: { variant: "dashboard" | "jobs" }) {
         </>
       ) : (
         <p className="text-lg font-medium mb-8">
-          🔒 Uploadez votre CV pour voir les offres qui correspondent à votre profil.
+          Uploadez votre CV pour voir les offres qui correspondent à votre profil.
         </p>
       )}
       <Link href="/cv">

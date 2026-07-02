@@ -10,15 +10,15 @@ import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import {
   User, GraduationCap, Wrench, Plus, X,
   CheckCircle2, Loader2, Shield, Briefcase, Clock,
-  Sparkles,
+  Star,
 } from "lucide-react";
 
 type Tab = "personal" | "skills" | "security";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "personal", label: "Personal Info", icon: User },
-  { id: "skills",   label: "Skills",        icon: Wrench },
-  { id: "security", label: "Security",      icon: Shield },
+  { id: "personal", label: "Infos perso",  icon: User },
+  { id: "skills",   label: "Compétences",   icon: Wrench },
+  { id: "security", label: "Sécurité",      icon: Shield },
 ];
 
 interface Toast {
@@ -97,10 +97,10 @@ export default function ProfilePage() {
       const hasSkills = (data.skills ?? []).length > 0;
       if (hasSkills) {
         setRecsQueued(true);
-        addToast("✏️ Profile saved — recommendations updating in background…");
+        addToast("Profil enregistré — recommandations en cours de mise à jour…");
         setTimeout(() => setRecsQueued(false), 8000);
       } else {
-        addToast("✏️ Profile saved successfully!");
+        addToast("Profil enregistré avec succès !");
       }
     } catch (err: unknown) {
       const msg =
@@ -206,8 +206,8 @@ export default function ProfilePage() {
             exit={{   opacity: 0, height: 0 }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 text-sm text-primary font-medium overflow-hidden"
           >
-            <Sparkles className="w-4 h-4 shrink-0 animate-pulse" />
-            AI recommendations are being regenerated based on your new profile…
+            <Star className="w-4 h-4 shrink-0 animate-pulse" />
+            Les recommandations IA sont en cours de mise à jour selon votre nouveau profil…
           </motion.div>
         )}
       </AnimatePresence>
@@ -249,9 +249,9 @@ export default function ProfilePage() {
             className="card-base overflow-hidden"
           >
             <div className="px-5 py-3.5 border-b border-border">
-              <h2 className="text-sm font-semibold">Personal Information</h2>
+              <h2 className="text-sm font-semibold">Informations personnelles</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Manage your public profile details
+                Gérez vos informations de profil
               </p>
             </div>
             <div className="p-5 space-y-4">
@@ -259,7 +259,7 @@ export default function ProfilePage() {
               {/* Name row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">First name</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Prénom</Label>
                   <Input
                     className="h-9 text-sm"
                     value={form.first_name}
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Last name</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Nom</Label>
                   <Input
                     className="h-9 text-sm"
                     value={form.last_name}
@@ -278,18 +278,18 @@ export default function ProfilePage() {
 
               {/* Email (read-only) */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Email address</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Adresse email</Label>
                 <Input className="h-9 text-sm opacity-50" value={user?.email ?? ""} disabled />
-                <p className="text-[11px] text-muted-foreground">Email cannot be changed</p>
+                <p className="text-[11px] text-muted-foreground">L&apos;email ne peut pas être modifié</p>
               </div>
 
               {/* Diploma */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5" />
-                  Education / Diploma
+                  Formation / Diplôme
                   <span className="ml-auto text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                    auto-extracted from CV
+                    extrait automatiquement
                   </span>
                 </Label>
                 <Input
@@ -304,9 +304,9 @@ export default function ProfilePage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Briefcase className="w-3.5 h-3.5" />
-                  Professional Domain
+                  Domaine professionnel
                   <span className="ml-auto text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                    auto-extracted from CV
+                    extrait automatiquement
                   </span>
                 </Label>
                 <Input
@@ -321,9 +321,9 @@ export default function ProfilePage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  Years of Experience
+                  Années d&apos;expérience
                   <span className="ml-auto text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                    auto-extracted from CV
+                    extrait automatiquement
                   </span>
                 </Label>
                 <Input
@@ -333,7 +333,7 @@ export default function ProfilePage() {
                   onChange={(e) => setForm({ ...form, years_experience: e.target.value })}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Used to improve AI job matching accuracy
+                  Améliore la précision du matching IA
                 </p>
               </div>
 
@@ -353,13 +353,13 @@ export default function ProfilePage() {
           >
             <div className="px-5 py-3.5 border-b border-border">
               <h2 className="text-sm font-semibold flex items-center justify-between">
-                Skills
+                Compétences
                 <span className="text-xs font-normal text-muted-foreground">
-                  {skills.length} added
+                  {skills.length} ajoutées
                 </span>
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Add skills manually or upload a CV to auto-extract
+                Ajoutez manuellement ou uploadez votre CV pour extraction automatique
               </p>
             </div>
             <div className="p-5 space-y-4">
@@ -414,12 +414,12 @@ export default function ProfilePage() {
                 <div className="rounded-xl border-2 border-dashed border-border p-8 text-center">
                   <Wrench className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    No skills yet. Type above or{" "}
+                    Aucune compétence. Tapez ci-dessus ou{" "}
                     <a
                       href="/cv"
                       className="text-primary hover:underline underline-offset-2"
                     >
-                      upload your CV
+                      uploadez votre CV
                     </a>
                     .
                   </p>
@@ -428,7 +428,7 @@ export default function ProfilePage() {
 
               {skills.length > 0 && (
                 <p className="text-[11px] text-muted-foreground">
-                  💡 Saving will re-run AI matching against all available jobs automatically.
+                  Sauvegarder relancera le matching IA sur toutes les offres disponibles.
                 </p>
               )}
 
@@ -447,9 +447,9 @@ export default function ProfilePage() {
             className="card-base overflow-hidden"
           >
             <div className="px-5 py-3.5 border-b border-border">
-              <h2 className="text-sm font-semibold">Security</h2>
+              <h2 className="text-sm font-semibold">Sécurité</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Manage your account security settings
+                Gérez la sécurité de votre compte
               </p>
             </div>
             <div className="p-5 space-y-4">
@@ -457,17 +457,18 @@ export default function ProfilePage() {
                 <div className="flex items-start gap-3">
                   <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold">Account Protected</p>
+                    <p className="text-sm font-semibold">Compte sécurisé</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Your account is secured with a hashed password. Password
-                      changes will be available in a future update.
+                      Votre compte est protégé par un mot de passe chiffré.
+                      Pour modifier votre mot de passe, rendez-vous dans les{" "}
+                      <a href="/settings" className="text-primary hover:underline">Paramètres</a>.
                     </p>
                   </div>
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">
-                  Email (login)
+                  Email (connexion)
                 </Label>
                 <Input
                   className="h-9 text-sm opacity-50"
@@ -502,11 +503,11 @@ export default function ProfilePage() {
             }}
           >
             {saving ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
+              <><Loader2 className="w-4 h-4 animate-spin" />Enregistrement…</>
             ) : saved ? (
-              <><CheckCircle2 className="w-4 h-4" />Saved — recommendations updating</>
+              <><CheckCircle2 className="w-4 h-4" />Enregistré</>
             ) : (
-              "Save changes"
+              "Enregistrer"
             )}
           </Button>
         </motion.div>

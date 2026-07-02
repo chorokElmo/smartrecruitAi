@@ -60,7 +60,8 @@ export default function RegisterPage() {
       setAuth(user, tok.access_token);
       router.push("/dashboard");
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Échec de l'inscription.");
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : Array.isArray(detail) ? detail.map((d: { msg?: string }) => d.msg).join(", ") : "Échec de l'inscription.");
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,8 @@ export default function RegisterPage() {
       s.reset();
       router.push("/dashboard");
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Échec de l'inscription.");
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : Array.isArray(detail) ? detail.map((d: { msg?: string }) => d.msg).join(", ") : "Échec de l'inscription.");
     } finally {
       setLoading(false);
     }

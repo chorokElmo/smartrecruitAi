@@ -12,9 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Search, MapPin, Building2, ChevronLeft, ChevronRight, Lock,
-  Briefcase, SlidersHorizontal, Sparkles, RefreshCw, Brain,
+  Briefcase, SlidersHorizontal, Star, RefreshCw, Target,
   ExternalLink, ArrowLeft, CheckCircle2, XCircle, Globe, Shield,
-  Zap, TrendingUp,
+  Rocket, TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useFilterStore } from "@/lib/store/filterStore";
@@ -29,7 +29,7 @@ const SECTORS = [
 
 const STATUS_OPTIONS = ["applied", "pending", "rejected", "accepted"] as const;
 const STATUS_LABEL: Record<string, string> = {
-  applied: "📨 Postulé", pending: "⏳ En attente", rejected: "❌ Refusé", accepted: "✅ Accepté",
+  applied: "Postulé", pending: "En attente", rejected: "Refusé", accepted: "Accepté",
 };
 const STATUS_COLOR: Record<string, string> = {
   applied:  "bg-blue-50 text-blue-600 border-blue-200",
@@ -126,7 +126,7 @@ function JobCard({ job, score, index, appInfo, onApply, onStatus }: {
             {/* Tags */}
             <div className="flex flex-wrap gap-1.5">
               {job.contract_type && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/8 text-primary border border-primary/15">{job.contract_type}</span>}
-              {job.required_diploma && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100">🎓 {job.required_diploma}</span>}
+              {job.required_diploma && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100">{job.required_diploma}</span>}
               {job.required_experience && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100">⏱ {job.required_experience} ans</span>}
               {job.sector === "public" && <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100"><Shield className="w-2.5 h-2.5" />Public</span>}
               {!hasScore && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-50 text-gray-400 border border-gray-100">Non scoré</span>}
@@ -201,7 +201,7 @@ function LiveMatchCard({ match, index }: { match: LiveMatch; index: number }) {
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5">
             {match.contract_type && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/8 text-primary border border-primary/15">{match.contract_type}</span>}
-            {match.required_diploma && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100">🎓 {match.required_diploma}</span>}
+            {match.required_diploma && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100">{match.required_diploma}</span>}
             {match.required_experience && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100">⏱ {match.required_experience} ans</span>}
             {match.sector === "public"
               ? <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100"><Shield className="w-2.5 h-2.5" />Public</span>
@@ -211,7 +211,7 @@ function LiveMatchCard({ match, index }: { match: LiveMatch; index: number }) {
 
           {/* AI explanation */}
           {match.explanation && (
-            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed italic">💡 {match.explanation}</p>
+            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed italic">{match.explanation}</p>
           )}
 
           {/* Matching skills */}
@@ -441,7 +441,7 @@ export default function JobsPage() {
           >
             {generating
               ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Analyse en cours…</span></>
-              : <><Zap className="w-4 h-4" /><span>Recherche IA</span></>
+              : <><Rocket className="w-4 h-4" /><span>Recherche IA</span></>
             }
           </button>
 
@@ -456,7 +456,7 @@ export default function JobsPage() {
                   : "border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 bg-white"
               )}
             >
-              <Sparkles className="w-4 h-4" />
+              <Star className="w-4 h-4" />
               Mes matches
               <span className={cn(
                 "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
@@ -485,7 +485,7 @@ export default function JobsPage() {
               /* Loading state */
               <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/3 py-24 text-center space-y-4">
                 <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto" style={{ boxShadow: "var(--shadow-primary)" }}>
-                  <Brain className="w-8 h-8 text-white animate-pulse" />
+                  <Target className="w-8 h-8 text-white animate-pulse" />
                 </div>
                 <div>
                   <p className="text-base font-bold text-gray-800">L&apos;IA recherche vos meilleures offres…</p>
@@ -503,7 +503,7 @@ export default function JobsPage() {
                 {/* Summary banner */}
                 <div className="rounded-2xl bg-gradient-to-r from-primary/6 to-violet-500/6 border border-primary/12 p-5 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center shrink-0" style={{ boxShadow: "var(--shadow-primary)" }}>
-                    <Brain className="w-6 h-6 text-white" />
+                    <Target className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-gray-900">Matching IA terminé</p>

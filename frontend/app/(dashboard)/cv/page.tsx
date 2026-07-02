@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { listVariants, itemVariants } from "@/components/ui/page-wrapper";
 import {
   Upload, FileText, CheckCircle2, AlertCircle,
-  Loader2, RefreshCw, Sparkles, ArrowRight,
+  Loader2, RefreshCw, Star, ArrowRight,
   CloudUpload, GraduationCap, Briefcase, Clock, Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +25,7 @@ interface CVResult {
 
 const steps = [
   { id: 1, label: "Upload",  icon: Upload    },
-  { id: 2, label: "Analyze", icon: Sparkles  },
+  { id: 2, label: "Analyze", icon: Star  },
   { id: 3, label: "Match",   icon: RefreshCw },
 ];
 
@@ -159,7 +159,7 @@ export default function CVPage() {
       const msg =
         (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
         "Error generating recommendations.";
-      alert(msg);
+      setError(msg);
     } finally {
       setGenerating(false);
     }
@@ -201,7 +201,7 @@ export default function CVPage() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm gap-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-lg font-semibold">🔄 Analyse de votre profil en cours...</p>
+        <p className="text-lg font-semibold">Analyse de votre profil en cours…</p>
         <p className="text-sm text-muted-foreground">Extraction des compétences et calcul de vos meilleurs matches</p>
       </div>
     );
@@ -220,7 +220,7 @@ export default function CVPage() {
 
       {/* ── Tabs ──────────────────────────────────── */}
       <div className="flex gap-1 p-1 bg-muted rounded-xl">
-        {([["upload","📤 Uploader"],["generate","✨ Générer un CV"]] as const).map(([id, label]) => (
+        {([["upload","Uploader"],["generate","Générer un CV"]] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -236,53 +236,22 @@ export default function CVPage() {
       {/* ── Generate-CV tab ───────────────────────── */}
       {tab === "generate" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { name: "Modern",       accent: "from-primary to-violet-400" },
-              { name: "Classique",    accent: "from-slate-500 to-slate-300" },
-              { name: "Minimaliste",  accent: "from-zinc-700 to-zinc-400" },
-            ].map((t) => (
-              <button
-                key={t.name}
-                onClick={() => setGenTemplate(t.name)}
-                className={`card-base p-3 text-left transition-all ${
-                  genTemplate === t.name ? "ring-2 ring-primary" : "hover:border-primary/40"
-                }`}
-              >
-                <div className={`h-20 rounded-lg bg-gradient-to-br ${t.accent} mb-2`} />
-                <p className="text-xs font-semibold">{t.name}</p>
-              </button>
-            ))}
-          </div>
-
-          {!genUrl ? (
-            <Button
-              onClick={handleAiGenerate}
-              disabled={genLoading}
-              className="w-full h-11 gradient-bg text-white border-0 gap-2 text-sm font-semibold"
-              style={{ boxShadow: "var(--shadow-primary)" }}
-            >
-              {genLoading
-                ? <><Loader2 className="w-4 h-4 animate-spin" />Claude génère votre CV...</>
-                : <><Sparkles className="w-4 h-4" />Générer avec l'IA</>}
-            </Button>
-          ) : (
-            <div className="space-y-3">
-              <iframe src={genUrl} title="CV généré" className="w-full h-[300px] sm:h-[480px] rounded-xl border border-border" />
-              <div className="flex gap-2">
-                <Button onClick={downloadGenerated} className="flex-1 h-10 gradient-bg text-white border-0 gap-2 text-sm"
-                        style={{ boxShadow: "var(--shadow-primary)" }}>
-                  📥 Télécharger en PDF
-                </Button>
-                <Button onClick={useGeneratedForMatching} variant="outline" className="flex-1 h-10 gap-2 text-sm">
-                  📤 Utiliser pour le matching
-                </Button>
-              </div>
-              <button onClick={handleAiGenerate} className="text-xs text-primary hover:underline w-full text-center">
-                ↻ Régénérer
-              </button>
+          <div className="card-base p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center mx-auto" style={{ boxShadow: "var(--shadow-primary)" }}>
+              <Star className="w-7 h-7 text-white" />
             </div>
-          )}
+            <div>
+              <h2 className="font-bold text-lg">Créateur de CV</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Remplissez votre profil et générez un CV professionnel en PDF avec notre modèle minimaliste.
+              </p>
+            </div>
+            <Link href="/cv/builder">
+              <Button className="w-full h-11 gradient-bg text-white border-0 gap-2 text-sm font-semibold" style={{ boxShadow: "var(--shadow-primary)" }}>
+                <Star className="w-4 h-4" />Créer mon CV
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
 
@@ -508,7 +477,7 @@ export default function CVPage() {
           >
             <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border">
               <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-white" />
+                <Star className="w-3 h-3 text-white" />
               </div>
               <h2 className="text-sm font-semibold">AI Extraction Results</h2>
             </div>

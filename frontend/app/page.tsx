@@ -8,6 +8,7 @@ import {
   Briefcase, Brain, Target, ArrowRight,
   Sparkles, Zap, CheckCircle2, Star,
 } from "lucide-react";
+import { VideoModal } from "@/components/layout/VideoModal";
 
 const features = [
   {
@@ -79,6 +80,7 @@ const fadeUp = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white overflow-hidden">
+      <VideoModal />
 
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-50 border-b border-white/8 bg-[#0A0A0F]/90 backdrop-blur-xl">
@@ -209,6 +211,34 @@ export default function LandingPage() {
               <p className="text-sm text-white/50">{label}</p>
             </div>
           ))}
+        </div>
+      </motion.section>
+
+      {/* ── Demo video ── */}
+      <motion.section
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        className="max-w-5xl mx-auto px-6 py-20"
+      >
+        <div className="text-center mb-10">
+          <Badge variant="secondary" className="mb-4 bg-violet-500/10 text-violet-300 border border-violet-500/20 px-3 py-1">
+            Démonstration
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+            Voir SmartRecruit AI en action
+          </h2>
+          <p className="text-white/50 max-w-lg mx-auto">
+            Découvrez comment notre plateforme transforme votre recherche d&apos;emploi en quelques minutes.
+          </p>
+        </div>
+        <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-violet-500/10 bg-black">
+          {/* glow ring */}
+          <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10 pointer-events-none z-10" />
+          <video
+            src="/demo.mp4"
+            controls
+            playsInline
+            className="w-full max-h-[560px] object-contain"
+          />
         </div>
       </motion.section>
 

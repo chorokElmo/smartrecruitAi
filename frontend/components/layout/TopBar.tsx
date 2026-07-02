@@ -10,8 +10,12 @@ const pageTitles: Record<string, string> = {
   "/dashboard":    "Dashboard",
   "/jobs":         "Offres d'emploi",
   "/applications": "Mes candidatures",
+  "/saved":        "Offres sauvegardées",
   "/cv":           "Mon CV",
   "/profile":      "Profil",
+  "/notifications":"Notifications",
+  "/settings":     "Paramètres",
+  "/help":         "Aide & Support",
 };
 
 interface TopBarProps {

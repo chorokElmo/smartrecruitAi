@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, MapPin, Building2,
   ExternalLink, CheckCircle2, XCircle, Loader2,
-  Sparkles, Bookmark, BookmarkCheck, Clock,
+  Star, Bookmark, BookmarkCheck, Clock,
   FileText, Copy, Download, X, Send,
 } from "lucide-react";
 
@@ -330,7 +330,7 @@ export default function JobDetailPage() {
                   {deadline && (
                     <span className={`flex items-center gap-1.5 ${isDeadlineSoon ? "text-amber-600 font-medium" : ""}`}>
                       <Clock className="w-3.5 h-3.5" />
-                      {isDeadlineSoon ? "⚡ " : ""}Deadline: {deadline}
+                      Deadline: {deadline}
                     </span>
                   )}
                 </div>
@@ -412,7 +412,7 @@ export default function JobDetailPage() {
                 ) : (
                   <Send className="w-3.5 h-3.5" />
                 )}
-                {isApplied ? "Applied ✓" : "Mark Applied"}
+                {isApplied ? "Postulé" : "Marquer postulé"}
               </Button>
 
               <Button
@@ -472,7 +472,7 @@ export default function JobDetailPage() {
           >
             <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border">
               <div className="w-6 h-6 rounded-lg gradient-bg flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-white" />
+                <Star className="w-3 h-3 text-white" />
               </div>
               <h2 className="text-sm font-semibold">AI Skills Analysis</h2>
               <span className="ml-auto text-xs text-muted-foreground">
